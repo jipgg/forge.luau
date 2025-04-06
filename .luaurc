@@ -1,0 +1,6 @@
+{
+    "languageMode": "strict",
+    "aliases": {
+        "guitest": "~/.dluau/require/guitest/"
+    }
+}

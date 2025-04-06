@@ -1,6 +1,7 @@
 add_executable(luf_fw WIN32
     main.cpp
     require.cpp
+    filesystem.cpp
 )
 
 target_link_libraries(luf_fw PRIVATE

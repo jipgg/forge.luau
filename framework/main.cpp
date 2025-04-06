@@ -6,6 +6,8 @@
 auto main() -> int {
     auto state = fw::setup_state();
     auto L = state.get();
+    filesystem::open(L);
+    luaL_sandbox(L);
     auto expected = fw::load_script(state.get(), "abc.luau");
     if (!expected) {
         std::println("\033[35mError: {}\033[0m", expected.error());

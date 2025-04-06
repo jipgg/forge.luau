@@ -8,7 +8,9 @@
 #include <filesystem>
 #include <expected>
 #include "framework.hpp"
+#include "compile_time.hpp"
 namespace fs = std::filesystem;
+namespace rgs = std::ranges;
 
 static bool codegen = false;
 
@@ -227,8 +229,8 @@ static int lua_callgrind(lua_State* L)
 #endif
 
 auto fw::load_script(state_t L, const path_t& path) -> std::expected<state_t, std::string> {
-    auto mainThread = lua_mainthread(L);
-    auto scriptThread = lua_newthread(mainThread);
+    auto main_thread = lua_mainthread(L);
+    auto script_thread = lua_newthread(main_thread);
     std::ifstream file{path};
     if (!file.is_open()) {
         return std::unexpected(std::format("failed to open {}", path.string()));
@@ -237,24 +239,23 @@ auto fw::load_script(state_t L, const path_t& path) -> std::expected<state_t, st
     while (std::getline(file, line)) contents.append(line + '\n');
     auto bytecode = Luau::compile(contents, copts());
     auto chunkname = std::format("@{}", normalizePath(path.string()));
-    auto status = luau_load(scriptThread, chunkname.c_str(), bytecode.data(), bytecode.size(), 0);
+    auto status = luau_load(script_thread, chunkname.c_str(), bytecode.data(), bytecode.size(), 0);
     if (status != LUA_OK) {
-        std::string errorMessage{lua_tostring(scriptThread, 1)};
-        lua_pop(L, 1);
-        return std::unexpected{errorMessage};
+        std::string error_message{lua_tostring(script_thread, -1)};
+        lua_pop(script_thread, 1);
+        return std::unexpected{error_message};
     }
-    return scriptThread;
+    return script_thread;
 }
-// static auto user_atom(const char* str, size_t len) -> int16_t {
-//     std::string_view namecall{str, len};
-//     logger.log("new atom entry {}", namecall);
-//     constexpr std::array info = compile_time::to_array<Namecall_Atom>();
-//     auto found = rngs::find_if(info, [&namecall](decltype(info[0])& e) {
-//         return e.name == namecall;
-//     });
-//     if (found == rngs::end(info)) return -1;
-//     return static_cast<int16_t>(found->value);
-// }
+static auto user_atom(const char* str, size_t len) -> int16_t {
+    std::string_view namecall{str, len};
+    constexpr std::array info = compile_time::to_array<Method>();
+    auto found = rgs::find_if(info, [&namecall](decltype(info[0])& e) {
+        return e.name == namecall;
+    });
+    if (found == rgs::end(info)) return -1;
+    return static_cast<int16_t>(found->value);
+}
 
 auto fw::setup_state() -> state_owner_t {
     auto L = luaL_newstate();
@@ -273,7 +274,7 @@ auto fw::setup_state() -> state_owner_t {
     lua_pushvalue(L, LUA_GLOBALSINDEX);
     luaL_register(L, nullptr, funcs);
     lua_pop(L, 1);
-    luaL_sandbox(L);
+    //luaL_sandbox(L);
     return {L, lua_close};
 }
 
