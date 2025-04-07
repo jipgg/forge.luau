@@ -18,7 +18,7 @@
             "name": "framework",
             "configurePreset": "default",
             "targets": [
-                "luf_fw"
+                "lauf_fw"
             ]
         }
     ]

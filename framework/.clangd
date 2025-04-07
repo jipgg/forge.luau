@@ -11,3 +11,5 @@ CompileFlags:
     - "-I../luau/Config/include"
     - "-I../luau/Common/include"
     - "-I../luau/Ast/include"
+
+    - "-I../extern/httplib"
