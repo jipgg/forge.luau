@@ -8,6 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # language
 add_subdirectory(luau)
 add_subdirectory(extern/httplib)
+add_subdirectory(extern/nlohmann_json)
 
 # framework
 add_subdirectory(framework)

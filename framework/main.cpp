@@ -1,12 +1,12 @@
 #include <print>
-#include <iostream>
 #include <lualib.h>
 #include "framework.hpp"
 
 auto main() -> int {
     auto state = fw::setup_state();
     auto L = state.get();
-    fs_library::open(L);
+    filesystem::open(L);
+    json::open(L);
     luaL_sandbox(L);
     auto expected = fw::load_script(state.get(), "abc.luau");
     if (!expected) {
@@ -19,3 +19,4 @@ auto main() -> int {
     }
     return 0;
 }
+

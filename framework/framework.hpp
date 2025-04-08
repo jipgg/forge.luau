@@ -41,10 +41,13 @@ enum class Type {
 };
 
 using fs_path_t = std::filesystem::path;
-constexpr auto fs_path_tname = "fs_path";
-namespace fs_library {
+constexpr auto fs_path_tname = "filesystem_path";
+namespace filesystem {
 void open(state_t L);
 void push_path(state_t L, const fs_path_t& value);
+}
+namespace json {
+void open(state_t L);
 }
 
 namespace fw {
@@ -63,7 +66,7 @@ constexpr auto as_boolean(state_t L, bool b) -> int {
     return 1;
 }
 constexpr auto as_path(state_t L, const fs_path_t& p) -> int {
-    fs_library::push_path(L, p);
+    filesystem::push_path(L, p);
     return 1;
 }
 constexpr auto to_path(state_t L, int idx) -> fs_path_t& {

@@ -63,7 +63,7 @@ static auto iterator_closure(state_t L) -> int {
     if (it != end) {
         const fs::directory_entry& entry = *it;
         auto path = entry.path();
-        fs_library::push_path(L, path);
+        filesystem::push_path(L, path);
         ++it;
         return 1;
     }
@@ -193,11 +193,11 @@ static auto create_directories(state_t L) -> int {
     return fw::as_boolean(L, result);
 }
 static auto path(state_t L) -> int {
-    fs_library::push_path(L, luaL_checkstring(L, 1));
+    filesystem::push_path(L, luaL_checkstring(L, 1));
     return 1;
 }
 
-void fs_library::open(state_t L) {
+void filesystem::open(state_t L) {
     const luaL_Reg filesystem[] = {
         {"remove", remove},
         {"remove_all", remove_all},
@@ -223,7 +223,7 @@ void fs_library::open(state_t L) {
     };
     lua_newtable(L);
     luaL_register(L, nullptr, filesystem);
-    lua_setglobal(L, "fs");
+    lua_setglobal(L, "filesystem");
 }
 static auto write_file(state_t L) -> int {
     fs::path destination = luaL_checkstring(L, 1);

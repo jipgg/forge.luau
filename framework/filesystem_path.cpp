@@ -43,7 +43,7 @@ static auto div(state_t L) -> int {
     return fw::as_path(L, fw::check_path(L, 1) / fw::check_path(L, 2));
 }
 
-void fs_library::push_path(state_t L, const fs_path_t& value) {
+void filesystem::push_path(state_t L, const fs_path_t& value) {
     common::make_userdata_tagged<fs_path_t, Type::fs_path>(L, value);
     if (luaL_newmetatable(L, fs_path_tname)) {
         const luaL_Reg metatable[] = {

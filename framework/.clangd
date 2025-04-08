@@ -13,3 +13,4 @@ CompileFlags:
     - "-I../luau/Ast/include"
 
     - "-I../extern/httplib"
+    - "-I../extern/nlohmann_json/include"

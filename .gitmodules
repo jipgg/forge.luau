@@ -4,3 +4,6 @@
 [submodule "extern/httplib"]
 	path = extern/httplib
 	url = https://github.com/yhirose/cpp-httplib
+[submodule "extern/nlohmann_json"]
+	path = extern/nlohmann_json
+	url = https://github.com/nlohmann/json

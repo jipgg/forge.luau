@@ -1,9 +1,9 @@
 add_executable(lauf_fw WIN32
     main.cpp
     state_setup.cpp
-    fs_library.cpp
-    fs_path.cpp
-    http.cpp
+    filesystem.cpp
+    filesystem_path.cpp
+    json.cpp
 )
 
 target_link_libraries(lauf_fw PRIVATE
@@ -14,5 +14,6 @@ target_link_libraries(lauf_fw PRIVATE
     Luau.CodeGen
     Luau.CLI.lib
     httplib
+    nlohmann_json::nlohmann_json
 )
 set_target_properties(lauf_fw PROPERTIES OUTPUT_NAME lauf)
