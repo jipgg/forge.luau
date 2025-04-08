@@ -7,59 +7,77 @@
 #include <lualib.h>
 #include <concepts>
 #include "compile_time.hpp"
-using path_t = std::filesystem::path;
-using state_t = lua_State*;
-using state_owner_t = std::unique_ptr<lua_State, decltype(&lua_close)>;
+#include "common.hpp"
 
 enum class Method {
     read_all,
     children,
+    string,
+    extension,
+    has_extension,
+    replace_extension,
+    has_stem,
+    stem,
+    filename,
+    has_filename,
+    replace_filename,
+    remove_filename,
+    parent_path,
+    has_parent_path,
+    relative_path,
+    has_relative_path,
+    is_absolute,
+    is_relative,
+    root_directory,
+    has_root_directory,
+    lexically_normal,
+    lexically_proximate,
+    lexically_relative,
+    COMPILE_TIME_ENUM_SENTINEL
+};
+enum class Type {
+    fs_path,
     COMPILE_TIME_ENUM_SENTINEL
 };
 
-namespace fw {
-auto setup_state() -> state_owner_t;
-auto load_script(state_t L, const path_t& path) -> std::expected<state_t, std::string>;
-}
-namespace filesystem {
-void open(state_t);
+using fs_path_t = std::filesystem::path;
+constexpr auto fs_path_tname = "fs_path";
+namespace fs_library {
+void open(state_t L);
+void push_path(state_t L, const fs_path_t& value);
 }
 
 namespace fw {
-constexpr auto push_api(state_t L, const luaL_Reg* api) {
-    lua_newtable(L);
-    luaL_register(L, nullptr, api);
+auto setup_state() -> state_owner_t;
+auto load_script(state_t L, const std::filesystem::path& path) -> std::expected<state_t, std::string>;
+constexpr auto as_string(state_t L, const std::string& str) -> int {
+    lua_pushstring(L, str.c_str());
+    return 1;
 }
-constexpr auto set_api(state_t L, const luaL_Reg* api, const std::string& name, int idx = -1) {
-    lua_newtable(L);
-    luaL_register(L, nullptr, api);
+constexpr auto as_string(state_t L, const fs_path_t& p) -> int {
+    lua_pushstring(L, p.string().c_str());
+    return 1;
 }
-constexpr auto to_method(state_t L) -> Method {
-    int atom;
-    lua_namecallatom(L, &atom);
-    return static_cast<Method>(atom);
+constexpr auto as_boolean(state_t L, bool b) -> int {
+    lua_pushboolean(L, b);
+    return 1;
 }
-template <class From, class To>
-concept Castable_To = requires {
-    static_cast<From>(To{});
-};
-template <class Ty>
-constexpr auto as_userdata(state_t L, int idx) -> Ty& {
-    return *static_cast<Ty*>(lua_touserdata(L, idx));
+constexpr auto as_path(state_t L, const fs_path_t& p) -> int {
+    fs_library::push_path(L, p);
+    return 1;
 }
-namespace detail {
-template <class Ty>
-void default_dtor(void* ud) {
-    static_cast<Ty*>(ud)->~Ty();
+constexpr auto to_path(state_t L, int idx) -> fs_path_t& {
+    return common::to_userdata_tagged<fs_path_t, Type::fs_path>(L, idx);
 }
+constexpr auto is_path(state_t L, int idx) -> bool {
+    return common::has_userdata_tag<Type::fs_path>(L, idx);
 }
-template <class Ty,  class ...Params>
-requires std::constructible_from<Ty, Params&&...>
-auto make_userdata(lua_State* L, Params&&...args) -> Ty& {
-    Ty* ud = static_cast<Ty*>(lua_newuserdatadtor(L, sizeof(Ty), detail::default_dtor<Ty>));
-    std::construct_at(ud, std::forward<Params>(args)...);
-    return *ud;
+constexpr auto check_path(state_t L, int idx) -> fs_path_t {
+    if (is_path(L, idx)) return to_path(L, idx);
+    else return luaL_checkstring(L, idx);
 }
 }
+
+
 
 #endif

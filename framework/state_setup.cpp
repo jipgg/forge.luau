@@ -7,6 +7,7 @@
 #include <fstream>
 #include <filesystem>
 #include <expected>
+#include <print>
 #include "framework.hpp"
 #include "compile_time.hpp"
 namespace fs = std::filesystem;
@@ -20,6 +21,11 @@ auto copts() -> Luau::CompileOptions {
     result.debugLevel = 3;
     result.typeInfoLevel = 1;
     result.coverageLevel = 2;
+    const char* userdata_types[] ={
+        fs_path_tname,
+        nullptr
+    };
+    result.userdataTypes = userdata_types;
     return result;
 }
 
@@ -228,7 +234,7 @@ static int lua_callgrind(lua_State* L)
 }
 #endif
 
-auto fw::load_script(state_t L, const path_t& path) -> std::expected<state_t, std::string> {
+auto fw::load_script(state_t L, const fs::path& path) -> std::expected<state_t, std::string> {
     auto main_thread = lua_mainthread(L);
     auto script_thread = lua_newthread(main_thread);
     std::ifstream file{path};
@@ -259,7 +265,7 @@ static auto user_atom(const char* str, size_t len) -> int16_t {
 
 auto fw::setup_state() -> state_owner_t {
     auto L = luaL_newstate();
-    //lua_callbacks(L)->useratom = user_atom;
+    lua_callbacks(L)->useratom = user_atom;
     if (codegen) Luau::CodeGen::create(L);
     luaL_openlibs(L);
     static const luaL_Reg funcs[] = {
@@ -277,4 +283,3 @@ auto fw::setup_state() -> state_owner_t {
     //luaL_sandbox(L);
     return {L, lua_close};
 }
-

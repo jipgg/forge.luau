@@ -1,7 +1,8 @@
 add_executable(lauf_fw WIN32
     main.cpp
-    require.cpp
-    filesystem.cpp
+    state_setup.cpp
+    fs_library.cpp
+    fs_path.cpp
     http.cpp
 )
 
