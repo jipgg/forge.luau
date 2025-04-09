@@ -1,10 +1,10 @@
 add_executable(lauf_fw WIN32
     main.cpp
     state_setup.cpp
-    filesystem.cpp
-    filesystem_path.cpp
-    fileio.cpp
-    json.cpp
+    filesystem_library.cpp
+    json_library.cpp
+    fileio_library.cpp
+    path_type.cpp
 )
 
 target_link_libraries(lauf_fw PRIVATE

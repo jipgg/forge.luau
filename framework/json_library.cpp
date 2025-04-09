@@ -1,7 +1,7 @@
-#include "framework.hpp"
+#include "builtin.hpp"
 #include <nlohmann/json.hpp>
+#include "lua.hpp"
 
-using std::string, std::string_view;
 using json_t = nlohmann::json;
 using json_value_t = decltype(json_t::parse(""));
 
@@ -105,7 +105,7 @@ static auto push_value(lua_State* L,  const json_value_t& val) -> int {
             lua_newtable(L);
             for (const auto& [key, subval] : val.items()) {
                 push_value(L, subval);
-                lua_rawsetfield(L, -2, string(key).c_str());
+                lua_rawsetfield(L, -2, std::string(key).c_str());
             }
         } return 1;
     }
@@ -121,15 +121,13 @@ static auto parse(state_t L) -> int {
     }
 }
 static auto to_json(state_t L) -> int {
-    return fw::as_string(L, table_to_json(L, 1).dump());
+    return lua::push(L, table_to_json(L, 1).dump());
 }
-void json::get(state_t L, const char* name) {
+void open_json(state_t L, Lib_config config) {
     const luaL_Reg json[] = {
         {"parse", parse},
         {"to_json", to_json},
         {nullptr, nullptr}
     };
-    lua_newtable(L);
-    luaL_register(L, nullptr, json);
-    if (name) lua_setfield(L, -2, name);
+    config.apply(L, json);
 }

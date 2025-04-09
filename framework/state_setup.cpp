@@ -7,8 +7,9 @@
 #include <fstream>
 #include <filesystem>
 #include <expected>
-#include "framework.hpp"
+#include "builtin.hpp"
 #include "compile_time.hpp"
+#include "userdata.hpp"
 namespace fs = std::filesystem;
 namespace rgs = std::ranges;
 
@@ -21,7 +22,7 @@ auto copts() -> Luau::CompileOptions {
     result.typeInfoLevel = 1;
     result.coverageLevel = 2;
     const char* userdata_types[] ={
-        filesystem::path_tname,
+        userdata::name_for<fs::path>(),
         nullptr
     };
     result.userdataTypes = userdata_types;
@@ -233,7 +234,7 @@ static int lua_callgrind(lua_State* L)
 }
 #endif
 
-auto fw::load_script(state_t L, const fs::path& path) -> std::expected<state_t, std::string> {
+auto load_script(state_t L, const fs::path& path) -> std::expected<state_t, std::string> {
     auto main_thread = lua_mainthread(L);
     auto script_thread = lua_newthread(main_thread);
     std::ifstream file{path};
@@ -262,7 +263,7 @@ static auto user_atom(const char* str, size_t len) -> int16_t {
     return static_cast<int16_t>(found->value);
 }
 
-auto fw::setup_state() -> state_owner_t {
+auto setup_state() -> state_owner_t {
     auto L = luaL_newstate();
     lua_callbacks(L)->useratom = user_atom;
     if (codegen) Luau::CodeGen::create(L);

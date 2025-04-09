@@ -1,18 +1,21 @@
 #include <print>
 #include <lualib.h>
-#include "framework.hpp"
+#include "builtin.hpp"
 constexpr auto builtin_library_name = "bin";
 
 auto main() -> int {
-    auto state = fw::setup_state();
+    auto state = setup_state();
     auto L = state.get();
+    register_path(L);
+
     lua_newtable(L);
-    filesystem::get(L);
-    json::get(L);
-    fileio::get(L);
+    open_filesystem(L);
+    open_json(L);
+    open_fileio(L);
     lua_setglobal(L, builtin_library_name);
+
     luaL_sandbox(L);
-    auto expected = fw::load_script(state.get(), "abc.luau");
+    auto expected = load_script(state.get(), "abc.luau");
     if (!expected) {
         std::println("\033[35mError: {}\033[0m", expected.error());
         return -1;

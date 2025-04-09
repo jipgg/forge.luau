@@ -9,3 +9,5 @@ print(fio.read_file(test_file))
 fs.remove(test_file)
 
 print(e, parsed.b, parsed.g[4])
+
+print(typeof(fs.current_path()))

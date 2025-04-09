@@ -1,10 +1,10 @@
-#include "framework.hpp"
+#include "builtin.hpp"
 #include <lualib.h>
 #include <filesystem>
-#include <fstream>
+#include "lua.hpp"
 #include <string_view>
+#include <cassert>
 namespace fs = std::filesystem;
-using namespace common;
 
 // util
 static void error_on_code(state_t L, const std::error_code& ec) {
@@ -36,14 +36,14 @@ static auto to_copy_options(std::string_view str) -> fs::copy_options {
 // filesystem
 static auto remove(state_t L) -> int {
     std::error_code err{};
-    auto r = fs::remove(fw::check_path(L, 1), err);
+    auto r = fs::remove(to_path(L, 1), err);
     error_on_code(L, err);
-    return fw::as_boolean(L, r);
+    return lua::push(L, r);
 }
 static auto rename(state_t L) -> int {
     std::error_code ec{};
-    auto from = fw::check_path(L, 1);
-    auto to = fw::check_path(L, 2);
+    auto from = to_path(L, 1);
+    auto to = to_path(L, 2);
     fs::rename(from, to, ec);
     if (ec) {
         luaL_errorL(L, "%s", ec.message().c_str());
@@ -52,28 +52,28 @@ static auto rename(state_t L) -> int {
 }
 static auto create_directory(state_t L) -> int {
     std::error_code ec{};
-    auto result = fs::create_directory(fw::check_path(L, 1), ec);
+    auto result = fs::create_directory(to_path(L, 1), ec);
     error_on_code(L, ec);
-    return fw::as_boolean(L, result);
+    return lua::push(L, result);
 }
 template <class Iterator>
 static auto iterator_closure(state_t L) -> int {
-    auto& it = common::to_userdata<Iterator>(L, lua_upvalueindex(1));
+    auto& it = lua::to_userdata<Iterator>(L, lua_upvalueindex(1));
     const Iterator end{};
     if (it != end) {
         const fs::directory_entry& entry = *it;
         auto path = entry.path();
-        filesystem::push_path(L, path);
+        push_path(L, path);
         ++it;
         return 1;
     }
     return 0;
 }
 static auto iterator(state_t L) -> int {
-    const fs::path& directory = fw::check_path(L, 1);
+    const fs::path& directory = to_path(L, 1);
     const bool recursive = luaL_optboolean(L, 2, false);
     if (not recursive) {
-        common::make_userdata<fs::directory_iterator>(L, directory);
+        lua::make_userdata<fs::directory_iterator>(L, directory);
         lua_pushcclosure(
             L,
             iterator_closure<fs::directory_iterator>,
@@ -81,7 +81,7 @@ static auto iterator(state_t L) -> int {
             1
         );
     } else {
-        common::make_userdata<fs::recursive_directory_iterator>(L, directory);
+        lua::make_userdata<fs::recursive_directory_iterator>(L, directory);
         lua_pushcclosure(
             L,
             iterator_closure<fs::recursive_directory_iterator>,
@@ -93,7 +93,7 @@ static auto iterator(state_t L) -> int {
 }
 static auto remove_all(state_t L) -> int {
     std::error_code ec{};
-    auto count = fs::remove_all(fw::check_path(L, 1), ec);
+    auto count = fs::remove_all(to_path(L, 1), ec);
     if (ec) {
         luaL_errorL(L, "%s", ec.message().c_str());
     }
@@ -101,48 +101,46 @@ static auto remove_all(state_t L) -> int {
     return 1;
 } 
 static auto current_path(state_t L) -> int {
-    return fw::as_path(L, fs::current_path());
+    return push_path(L, fs::current_path());
 }
 static auto exists(state_t L) -> int {
-    lua_pushboolean(L, fs::exists(fw::check_path(L, 1)));
-    return 1;
+    return lua::push(L, fs::exists(to_path(L, 1)));
 }
 static auto is_directory(state_t L) -> int {
-    lua_pushboolean(L, fs::is_directory(fw::check_path(L, 1)));
-    return 1;
+    return lua::push(L, fs::is_directory(to_path(L, 1)));
 }
 static auto is_regular_file(state_t L) -> int {
-    lua_pushboolean(L, fs::is_regular_file(fw::check_path(L, 1)));
+    lua_pushboolean(L, fs::is_regular_file(to_path(L, 1)));
     return 1;
 }
 static auto temp_directory_path(state_t L) -> int {
     std::error_code ec{};
     auto path = fs::temp_directory_path(ec);
     if (ec) luaL_errorL(L, "%s", ec.message().c_str());
-    return fw::as_path(L, path);
+    return push_path(L, path);
 }
 static auto equivalent(state_t L) -> int {
     std::error_code ec{};
-    auto y = fs::equivalent(fw::check_path(L, 1), fw::check_path(L, 2) , ec);
+    auto y = fs::equivalent(to_path(L, 1), to_path(L, 2) , ec);
     error_on_code(L, ec);
-    return fw::as_boolean(L, y);
+    return lua::push(L, y);
 }
 static auto weakly_canonical(state_t L) -> int {
     std::error_code ec{};
-    auto path = fs::weakly_canonical(fw::check_path(L, 1), ec);
+    auto path = fs::weakly_canonical(to_path(L, 1), ec);
     error_on_code(L, ec);
-    return fw::as_path(L, path);
+    return push_path(L, path);
 }
 static auto absolute(state_t L) -> int {
     std::error_code ec{};
-    auto path = fs::absolute(fw::check_path(L, 1), ec);
+    auto path = fs::absolute(to_path(L, 1), ec);
     error_on_code(L, ec);
-    return fw::as_string(L, path);
+    return push_path(L, path);
 }
 static auto copy(state_t L) -> int {
     std::error_code ec{};
-    const fs::path from = fw::check_path(L, 1);
-    const fs::path to = fw::check_path(L, 2);
+    const fs::path from = to_path(L, 1);
+    const fs::path to = to_path(L, 2);
     if (lua_isnoneornil(L, 3)) {
         fs::copy(from, to, ec);
     } else {
@@ -154,8 +152,8 @@ static auto copy(state_t L) -> int {
 }
 static auto copy_file(state_t L) -> int {
     std::error_code ec{};
-    const fs::path from = fw::check_path(L, 1);
-    const fs::path to = fw::check_path(L, 2);
+    const fs::path from = to_path(L, 1);
+    const fs::path to = to_path(L, 2);
     bool result{};
     if (lua_isnoneornil(L, 3)) {
         result = fs::copy_file(from, to, ec);
@@ -164,40 +162,39 @@ static auto copy_file(state_t L) -> int {
         result = fs::copy_file(from, to, options, ec);
     }
     error_on_code(L, ec);
-    return fw::as_boolean(L, result);
+    return lua::push(L, result);
 }
 static auto copy_symlink(state_t L) -> int {
     std::error_code ec{};
-    const fs::path from = fw::check_path(L, 1);
-    const fs::path to = fw::check_path(L, 2);
+    const fs::path from = to_path(L, 1);
+    const fs::path to = to_path(L, 2);
     fs::copy_symlink(from, to, ec);
     error_on_code(L, ec);
     return 0;
 }
 static auto create_symlink(state_t L) -> int {
     std::error_code ec{};
-    fs::create_symlink(fw::check_path(L, 1), fw::check_path(L, 2), ec);
+    fs::create_symlink(to_path(L, 1), to_path(L, 2), ec);
     error_on_code(L, ec);
-    return 0;
+    return lua::none;
 }
 static auto create_directory_symlink(state_t L) -> int {
     std::error_code ec{};
-    fs::create_directory_symlink(fw::check_path(L, 1), fw::check_path(L, 2), ec);
+    fs::create_directory_symlink(to_path(L, 1), to_path(L, 2), ec);
     error_on_code(L, ec);
-    return 0;
+    return lua::none;
 }
 static auto create_directories(state_t L) -> int {
     std::error_code ec{};
-    auto result = fs::create_directories(fw::check_path(L, 1), ec);
+    auto result = fs::create_directories(to_path(L, 1), ec);
     error_on_code(L, ec);
-    return fw::as_boolean(L, result);
+    return lua::push(L, result);
 }
 static auto path(state_t L) -> int {
-    filesystem::push_path(L, luaL_checkstring(L, 1));
-    return 1;
+    return push_path(L, luaL_checkstring(L, 1));
 }
 
-void filesystem::get(state_t L, const char* name) {
+void open_filesystem(state_t L, Lib_config config) {
     const luaL_Reg filesystem[] = {
         {"remove", remove},
         {"remove_all", remove_all},
@@ -221,7 +218,5 @@ void filesystem::get(state_t L, const char* name) {
         {"path", path},
         {nullptr, nullptr}
     };
-    lua_newtable(L);
-    luaL_register(L, nullptr, filesystem);
-    if (name) lua_setfield(L, -2, name);
+    config.apply(L, filesystem);
 }
