@@ -1,4 +1,4 @@
-add_executable(lauf_fw WIN32
+add_executable(luauxt
     main.cpp
     state_setup.cpp
     filesystem_library.cpp
@@ -7,7 +7,7 @@ add_executable(lauf_fw WIN32
     path_type.cpp
 )
 
-target_link_libraries(lauf_fw PRIVATE
+target_link_libraries(luauxt PRIVATE
     Luau.VM
     Luau.Common
     Luau.Compiler
@@ -17,4 +17,4 @@ target_link_libraries(lauf_fw PRIVATE
     httplib
     nlohmann_json::nlohmann_json
 )
-set_target_properties(lauf_fw PROPERTIES OUTPUT_NAME lauf)
+set_target_properties(luauxt PROPERTIES OUTPUT_NAME luauxt)

@@ -2,7 +2,7 @@
     "version": 3,
     "configurePresets": [
         {
-            "name": "default",
+            "name": "linux",
             "hidden": false,
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/cmake",
@@ -15,10 +15,10 @@
     ],
     "buildPresets": [
         {
-            "name": "framework",
-            "configurePreset": "default",
+            "name": "luauxt-linux",
+            "configurePreset": "linux",
             "targets": [
-                "lauf_fw"
+                "luauxt"
             ]
         }
     ]

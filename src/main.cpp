@@ -1,7 +1,7 @@
 #include <print>
 #include <lualib.h>
 #include "builtin.hpp"
-constexpr auto builtin_library_name = "bin";
+constexpr auto builtin_library_name = "xt";
 
 auto main() -> int {
     auto state = setup_state();

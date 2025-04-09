@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(lauf LANGUAGES CXX C)
+project(luauxt LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,5 +10,5 @@ add_subdirectory(luau)
 add_subdirectory(extern/httplib)
 add_subdirectory(extern/nlohmann_json)
 
-# framework
-add_subdirectory(framework)
+# source code
+add_subdirectory(src)

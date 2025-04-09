@@ -43,7 +43,7 @@ type fileio = {
     write_file: (file_path: fs_path_t, contents: string) -> (),
     read_file: (file_path: fs_path_t) -> string,
 }
-declare bin: {
+declare xt: {
     filesystem: filesystem,
     json: json,
     fileio: fileio,
