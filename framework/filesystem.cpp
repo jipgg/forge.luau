@@ -197,7 +197,7 @@ static auto path(state_t L) -> int {
     return 1;
 }
 
-void filesystem::open(state_t L) {
+void filesystem::get(state_t L, const char* name) {
     const luaL_Reg filesystem[] = {
         {"remove", remove},
         {"remove_all", remove_all},
@@ -223,12 +223,5 @@ void filesystem::open(state_t L) {
     };
     lua_newtable(L);
     luaL_register(L, nullptr, filesystem);
-    lua_setglobal(L, "filesystem");
-}
-static auto write_file(state_t L) -> int {
-    fs::path destination = luaL_checkstring(L, 1);
-    std::string contents = luaL_checkstring(L, 2);
-    std::fstream file{destination};
-    file << contents;
-    return 0;
+    if (name) lua_setfield(L, -2, name);
 }

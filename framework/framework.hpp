@@ -40,14 +40,17 @@ enum class Type {
     COMPILE_TIME_ENUM_SENTINEL
 };
 
-using fs_path_t = std::filesystem::path;
-constexpr auto fs_path_tname = "filesystem_path";
 namespace filesystem {
-void open(state_t L);
-void push_path(state_t L, const fs_path_t& value);
+using path_t = std::filesystem::path;
+constexpr auto path_tname = "filesystem_path";
+void push_path(state_t L, const path_t& value);
+void get(state_t L, const char* name = "filesystem");
+}
+namespace fileio {
+void get(state_t L, const char* name = "fileio");
 }
 namespace json {
-void open(state_t L);
+void get(state_t L, const char* name = "json");
 }
 
 namespace fw {
@@ -57,7 +60,7 @@ constexpr auto as_string(state_t L, const std::string& str) -> int {
     lua_pushstring(L, str.c_str());
     return 1;
 }
-constexpr auto as_string(state_t L, const fs_path_t& p) -> int {
+constexpr auto as_string(state_t L, const filesystem::path_t& p) -> int {
     lua_pushstring(L, p.string().c_str());
     return 1;
 }
@@ -65,22 +68,19 @@ constexpr auto as_boolean(state_t L, bool b) -> int {
     lua_pushboolean(L, b);
     return 1;
 }
-constexpr auto as_path(state_t L, const fs_path_t& p) -> int {
+constexpr auto as_path(state_t L, const filesystem::path_t& p) -> int {
     filesystem::push_path(L, p);
     return 1;
 }
-constexpr auto to_path(state_t L, int idx) -> fs_path_t& {
-    return common::to_userdata_tagged<fs_path_t, Type::fs_path>(L, idx);
+constexpr auto to_path(state_t L, int idx) -> filesystem::path_t& {
+    return common::to_userdata_tagged<filesystem::path_t, Type::fs_path>(L, idx);
 }
 constexpr auto is_path(state_t L, int idx) -> bool {
     return common::has_userdata_tag<Type::fs_path>(L, idx);
 }
-constexpr auto check_path(state_t L, int idx) -> fs_path_t {
+constexpr auto check_path(state_t L, int idx) -> filesystem::path_t {
     if (is_path(L, idx)) return to_path(L, idx);
     else return luaL_checkstring(L, idx);
 }
 }
-
-
-
 #endif

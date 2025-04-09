@@ -123,11 +123,13 @@ static auto parse(state_t L) -> int {
 static auto to_json(state_t L) -> int {
     return fw::as_string(L, table_to_json(L, 1).dump());
 }
-void json::open(state_t L) {
+void json::get(state_t L, const char* name) {
     const luaL_Reg json[] = {
         {"parse", parse},
         {"to_json", to_json},
         {nullptr, nullptr}
     };
-    luaL_register(L, "json", json);
+    lua_newtable(L);
+    luaL_register(L, nullptr, json);
+    if (name) lua_setfield(L, -2, name);
 }

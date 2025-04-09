@@ -3,7 +3,6 @@
 #include <concepts>
 #include <memory>
 #include "lualib.h"
-
 using state_t = lua_State*;
 using state_owner_t = std::unique_ptr<lua_State, decltype(&lua_close)>;
 namespace common {
@@ -61,5 +60,61 @@ auto make_userdata_tagged(lua_State* L, Params&&...args) -> Ty& {
     std::construct_at(ud, std::forward<Params>(args)...);
     return *ud;
 }
+class Ref {
+    int ref_;
+    state_t state_;
+public:
+    Ref(): ref_(-1), state_(nullptr) {}
+    Ref(state_t L, int idx):
+        ref_(lua_ref(L, idx)),
+        state_(lua_mainthread(L)) {
+    }
+    Ref(const Ref& other) {
+        state_ = other.state_;
+        if (state_) {
+            push(state_);
+            ref_ = lua_ref(state_, -1);
+            lua_pop(state_, 1);
+        }
+    }
+    Ref(Ref&& other) noexcept {
+        state_ = other.state_;
+        ref_ = other.ref_;
+        other.state_ = nullptr;
+    }
+    Ref& operator=(const Ref& other) {
+        state_ = other.state_;
+        if (state_) {
+            push(state_);
+            ref_ = lua_ref(state_, -1);
+            lua_pop(state_, 1);
+        }
+        return *this;
+    }
+    Ref& operator=(Ref&& other) noexcept {
+        state_ = other.state_;
+        ref_ = other.ref_;
+        other.state_ = nullptr;
+        return *this;
+    }
+    ~Ref() {
+        if (state_) {
+            lua_unref(state_, ref_);
+        }
+    }
+    operator bool() const {
+        return state_;
+    }
+    void push(lua_State* L) {
+        if (not state_) {
+            lua_pushnil(L);
+            return;
+        }
+        lua_getref(L, ref_);
+    }
+    void release() {
+        state_ = nullptr;
+    }
+};
 }
 #endif

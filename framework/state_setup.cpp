@@ -7,7 +7,6 @@
 #include <fstream>
 #include <filesystem>
 #include <expected>
-#include <print>
 #include "framework.hpp"
 #include "compile_time.hpp"
 namespace fs = std::filesystem;
@@ -22,7 +21,7 @@ auto copts() -> Luau::CompileOptions {
     result.typeInfoLevel = 1;
     result.coverageLevel = 2;
     const char* userdata_types[] ={
-        fs_path_tname,
+        filesystem::path_tname,
         nullptr
     };
     result.userdataTypes = userdata_types;

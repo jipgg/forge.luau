@@ -39,6 +39,13 @@ declare class filesystem_path
     function replace_filename(self, replacement: string): filesystem_path
     function __div(self, other: fs_path_t): filesystem_path
 end
-declare filesystem: filesystem
-declare json: json 
+type fileio = {
+    write_file: (file_path: fs_path_t, contents: string) -> (),
+    read_file: (file_path: fs_path_t) -> string,
+}
+declare bin: {
+    filesystem: filesystem,
+    json: json,
+    fileio: fileio,
+}
 declare collectgarbage: (("collect") -> ()) & (("count") -> number)

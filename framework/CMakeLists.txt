@@ -3,6 +3,7 @@ add_executable(lauf_fw WIN32
     state_setup.cpp
     filesystem.cpp
     filesystem_path.cpp
+    fileio.cpp
     json.cpp
 )
 
