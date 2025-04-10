@@ -1,9 +1,6 @@
 CompileFlags:
   Add:
     # luau
-    - "-I../luau/VM"
-    - "-I../luau/Compiler"
-    - "-I../luau/CodeGen"
     - "-I../luau/VM/include"
     - "-I../luau/Compiler/include"
     - "-I../luau/CodeGen/include"

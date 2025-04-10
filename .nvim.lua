@@ -1,5 +1,5 @@
 local definitions = {
-    "lsp/framework.d.luau",
+    "lsp/luauxt.d.luau",
 }
 local docs = {
 }

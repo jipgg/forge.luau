@@ -1,5 +1,5 @@
-#ifndef COMPILE_TIME_HPP
-#define COMPILE_TIME_HPP
+#ifndef UTILITY_COMPILE_TIME_HPP
+#define UTILITY_COMPILE_TIME_HPP
 #include <source_location>
 #include <utility>
 #include <string_view>

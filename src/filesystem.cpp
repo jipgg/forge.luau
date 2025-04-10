@@ -1,7 +1,7 @@
-#include "builtin.hpp"
+#include "common.hpp"
 #include <lualib.h>
 #include <filesystem>
-#include "lua.hpp"
+#include "utility/luau.hpp"
 #include <string_view>
 #include <cassert>
 namespace fs = std::filesystem;
@@ -38,7 +38,7 @@ static auto remove(state_t L) -> int {
     std::error_code err{};
     auto r = fs::remove(to_path(L, 1), err);
     error_on_code(L, err);
-    return lua::push(L, r);
+    return luau::push(L, r);
 }
 static auto rename(state_t L) -> int {
     std::error_code ec{};
@@ -54,11 +54,11 @@ static auto create_directory(state_t L) -> int {
     std::error_code ec{};
     auto result = fs::create_directory(to_path(L, 1), ec);
     error_on_code(L, ec);
-    return lua::push(L, result);
+    return luau::push(L, result);
 }
 template <class Iterator>
 static auto iterator_closure(state_t L) -> int {
-    auto& it = lua::to_userdata<Iterator>(L, lua_upvalueindex(1));
+    auto& it = luau::to_userdata<Iterator>(L, lua_upvalueindex(1));
     const Iterator end{};
     if (it != end) {
         const fs::directory_entry& entry = *it;
@@ -69,11 +69,11 @@ static auto iterator_closure(state_t L) -> int {
     }
     return 0;
 }
-static auto iterator(state_t L) -> int {
+static auto directory_iterator(state_t L) -> int {
     const fs::path& directory = to_path(L, 1);
     const bool recursive = luaL_optboolean(L, 2, false);
     if (not recursive) {
-        lua::make_userdata<fs::directory_iterator>(L, directory);
+        luau::make_userdata<fs::directory_iterator>(L, directory);
         lua_pushcclosure(
             L,
             iterator_closure<fs::directory_iterator>,
@@ -81,7 +81,7 @@ static auto iterator(state_t L) -> int {
             1
         );
     } else {
-        lua::make_userdata<fs::recursive_directory_iterator>(L, directory);
+        luau::make_userdata<fs::recursive_directory_iterator>(L, directory);
         lua_pushcclosure(
             L,
             iterator_closure<fs::recursive_directory_iterator>,
@@ -104,10 +104,10 @@ static auto current_path(state_t L) -> int {
     return push_path(L, fs::current_path());
 }
 static auto exists(state_t L) -> int {
-    return lua::push(L, fs::exists(to_path(L, 1)));
+    return luau::push(L, fs::exists(to_path(L, 1)));
 }
 static auto is_directory(state_t L) -> int {
-    return lua::push(L, fs::is_directory(to_path(L, 1)));
+    return luau::push(L, fs::is_directory(to_path(L, 1)));
 }
 static auto is_regular_file(state_t L) -> int {
     lua_pushboolean(L, fs::is_regular_file(to_path(L, 1)));
@@ -123,11 +123,17 @@ static auto equivalent(state_t L) -> int {
     std::error_code ec{};
     auto y = fs::equivalent(to_path(L, 1), to_path(L, 2) , ec);
     error_on_code(L, ec);
-    return lua::push(L, y);
+    return luau::push(L, y);
 }
 static auto weakly_canonical(state_t L) -> int {
     std::error_code ec{};
     auto path = fs::weakly_canonical(to_path(L, 1), ec);
+    error_on_code(L, ec);
+    return push_path(L, path);
+}
+static auto canonical(state_t L) -> int {
+    std::error_code ec{};
+    auto path = fs::canonical(to_path(L, 1), ec);
     error_on_code(L, ec);
     return push_path(L, path);
 }
@@ -162,7 +168,7 @@ static auto copy_file(state_t L) -> int {
         result = fs::copy_file(from, to, options, ec);
     }
     error_on_code(L, ec);
-    return lua::push(L, result);
+    return luau::push(L, result);
 }
 static auto copy_symlink(state_t L) -> int {
     std::error_code ec{};
@@ -176,31 +182,31 @@ static auto create_symlink(state_t L) -> int {
     std::error_code ec{};
     fs::create_symlink(to_path(L, 1), to_path(L, 2), ec);
     error_on_code(L, ec);
-    return lua::none;
+    return luau::none;
 }
 static auto create_directory_symlink(state_t L) -> int {
     std::error_code ec{};
     fs::create_directory_symlink(to_path(L, 1), to_path(L, 2), ec);
     error_on_code(L, ec);
-    return lua::none;
+    return luau::none;
 }
 static auto create_directories(state_t L) -> int {
     std::error_code ec{};
     auto result = fs::create_directories(to_path(L, 1), ec);
     error_on_code(L, ec);
-    return lua::push(L, result);
+    return luau::push(L, result);
 }
 static auto path(state_t L) -> int {
     return push_path(L, luaL_checkstring(L, 1));
 }
 
-void open_filesystem(state_t L, Lib_config config) {
+void open_filesystem(state_t L, library_config config) {
     const luaL_Reg filesystem[] = {
         {"remove", remove},
         {"remove_all", remove_all},
         {"rename", rename},
         {"create_directory", create_directory},
-        {"iterator", iterator},
+        {"directory_iterator", directory_iterator},
         {"exists", exists},
         {"current_path", current_path},
         {"is_directory", is_directory},
@@ -208,6 +214,7 @@ void open_filesystem(state_t L, Lib_config config) {
         {"temp_directory_path", temp_directory_path},
         {"equivalent", equivalent},
         {"weakly_canonical", weakly_canonical},
+        {"canonical", canonical},
         {"absolute", absolute},
         {"copy", copy},
         {"copy_file", copy_file},

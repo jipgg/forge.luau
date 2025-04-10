@@ -1,13 +1,12 @@
-add_executable(luauxt
+add_executable(executable
     main.cpp
-    state_setup.cpp
-    filesystem_library.cpp
-    json_library.cpp
-    fileio_library.cpp
-    path_type.cpp
+    filesystem.cpp
+    json.cpp
+    fileio.cpp
+    path.cpp
 )
 
-target_link_libraries(luauxt PRIVATE
+target_link_libraries(executable PRIVATE
     Luau.VM
     Luau.Common
     Luau.Compiler
@@ -17,4 +16,4 @@ target_link_libraries(luauxt PRIVATE
     httplib
     nlohmann_json::nlohmann_json
 )
-set_target_properties(luauxt PROPERTIES OUTPUT_NAME luauxt)
+set_target_properties(executable PROPERTIES OUTPUT_NAME ${PROJECT_NAME})

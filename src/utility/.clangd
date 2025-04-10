@@ -1,0 +1,4 @@
+CompileFlags:
+  Add:
+    - "-I../../luau/VM/include"
+    - "-I../../luau/Compiler/include"

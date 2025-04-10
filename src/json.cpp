@@ -1,6 +1,6 @@
-#include "builtin.hpp"
+#include "common.hpp"
 #include <nlohmann/json.hpp>
-#include "lua.hpp"
+#include "utility/luau.hpp"
 
 using json_t = nlohmann::json;
 using json_value_t = decltype(json_t::parse(""));
@@ -10,7 +10,7 @@ static auto is_table_arraylike(lua_State* L, int index) -> bool {
     lua_Integer expected_index = 1;
     lua_pushnil(L);
     while (lua_next(L, index)) {
-        if (lua_type(L, -2) != LUA_TNUMBER || lua_tointeger(L, -2) != expected_index) {
+        if (lua_type(L, -2) != LUA_TNUMBER or lua_tointeger(L, -2) != expected_index) {
             lua_pop(L, 2);
             return false;
         }
@@ -121,9 +121,9 @@ static auto parse(state_t L) -> int {
     }
 }
 static auto to_json(state_t L) -> int {
-    return lua::push(L, table_to_json(L, 1).dump());
+    return luau::push(L, table_to_json(L, 1).dump());
 }
-void open_json(state_t L, Lib_config config) {
+void open_json(state_t L, library_config config) {
     const luaL_Reg json[] = {
         {"parse", parse},
         {"to_json", to_json},

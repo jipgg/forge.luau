@@ -1,4 +1,4 @@
-#include "builtin.hpp"
+#include "common.hpp"
 #include <filesystem>
 #include <fstream>
 namespace fs = std::filesystem;
@@ -27,8 +27,26 @@ static auto read_file(state_t L) -> int {
     lua_pushstring(L, content.c_str());
     return 1;
 }
+// struct file_writer: public writer_t {
+//     std::ofstream file;
+//     fs::path path;
+//     bool append = false;
+//     auto open() -> std::ostream& override {
+//         file.open(path);
+//         return file;
+//     }
+//     void close() override {
+//         file.close();
+//     }
+//     auto get() -> std::ostream& override {
+//         return file;
+//     }
+// };
+// static auto writer(state_t L) -> int {
+//     push_writer(L, file_writer{.path = to_path(L, 2)});
+// }
 
-void open_fileio(state_t L, Lib_config config) {
+void open_fileio(state_t L, library_config config) {
     const luaL_Reg fileio[] = {
         {"write_file", write_file},
         {"read_file", read_file},
