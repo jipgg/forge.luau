@@ -13,7 +13,7 @@
 namespace fs = std::filesystem;
 namespace rgs = std::ranges;
 
-static bool codegen = false;
+static bool codegen = true;
 
 static auto copts() -> Luau::CompileOptions {
     Luau::CompileOptions result = {};
@@ -28,7 +28,6 @@ static auto copts() -> Luau::CompileOptions {
     result.userdataTypes = userdata_types;
     return result;
 }
-
 static auto loadstring(state_t L) -> int {
     size_t l = 0;
     const char* s = luaL_checklstring(L, 1, &l);
@@ -83,8 +82,8 @@ struct error_handler: RequireResolver::ErrorHandler {
     state_t state;
 };
 static auto resolve_require(state_t L) -> decltype(auto) {
-    std::string name = luaL_checkstring(L, 1);
-    lua_Debug ar;
+    auto name = std::string(luaL_checkstring(L, 1));
+    auto ar = lua_Debug{};
     lua_getinfo(L, 1, "s", &ar);
     auto rc = require_context{ar.source};
     auto cm = cache_manager{L};
@@ -159,37 +158,7 @@ static int collectgarbage(lua_State* L) {
     }
     luaL_error(L, "collectgarbage must be called with 'count' or 'collect'");
 }
-#ifdef CALLGRIND
-static int lua_callgrind(lua_State* L)
-{
-    const char* option = luaL_checkstring(L, 1);
-
-    if (strcmp(option, "running") == 0)
-    {
-        int r = RUNNING_ON_VALGRIND;
-        lua_pushboolean(L, r);
-        return 1;
-    }
-
-    if (strcmp(option, "zero") == 0)
-    {
-        CALLGRIND_ZERO_STATS;
-        return 0;
-    }
-
-    if (strcmp(option, "dump") == 0)
-    {
-        const char* name = luaL_checkstring(L, 2);
-
-        CALLGRIND_DUMP_STATS_AT(name);
-        return 0;
-    }
-
-    luaL_error(L, "callgrind must be called with one of 'running', 'zero', 'dump'");
-}
-#endif
-
-auto load_script(state_t L, const fs::path& path) -> std::expected<state_t, std::string> {
+auto load_script(state_t L, fs::path const& path) -> std::expected<state_t, std::string> {
     auto main_thread = lua_mainthread(L);
     auto script_thread = lua_newthread(main_thread);
     std::ifstream file{path};
@@ -200,18 +169,18 @@ auto load_script(state_t L, const fs::path& path) -> std::expected<state_t, std:
     while (std::getline(file, line)) contents.append(line + '\n');
     auto bytecode = Luau::compile(contents, copts());
     auto chunkname = std::format("@{}", normalizePath(path.string()));
-    auto status = luau_load(script_thread, chunkname.c_str(), bytecode.data(), bytecode.size(), 0);
-    if (status != LUA_OK) {
-        std::string error_message{lua_tostring(script_thread, -1)};
-        lua_pop(script_thread, 1);
-        return std::unexpected{error_message};
-    }
-    return script_thread;
+
+    return luau::load(script_thread, bytecode, chunkname)
+    .transform([&] {
+        return script_thread;
+    }).transform_error([](auto err) {
+        return std::format("Loading error: {}", err);
+    });
 }
 static auto user_atom(const char* str, size_t len) -> int16_t {
     std::string_view namecall{str, len};
-    constexpr std::array info = compile_time::to_array<method_name>();
-    auto found = rgs::find_if(info, [&namecall](decltype(info[0])& e) {
+    static constexpr std::array info = compile_time::to_array<method_name>();
+    auto found = rgs::find_if(info, [&namecall](auto const& e) {
         return e.name == namecall;
     });
     if (found == rgs::end(info)) return -1;
@@ -219,36 +188,29 @@ static auto user_atom(const char* str, size_t len) -> int16_t {
 }
 
 auto setup_state() -> state_owner_t {
-    auto L = luaL_newstate();
-    lua_callbacks(L)->useratom = user_atom;
-    if (codegen) Luau::CodeGen::create(L);
-    luaL_openlibs(L);
-    static const luaL_Reg funcs[] = {
+    auto globals = std::to_array<luaL_Reg>({
         {"loadstring", loadstring},
         {"require", require},
         {"collectgarbage", collectgarbage},
-#ifdef CALLGRIND
-        {"callgrind", lua_callgrind},
-#endif
-        {NULL, NULL},
-    };
-    lua_pushvalue(L, LUA_GLOBALSINDEX);
-    luaL_register(L, nullptr, funcs);
-    lua_pop(L, 1);
-    //luaL_sandbox(L);
-    return {L, lua_close};
-}
-
-auto main() -> int {
-    auto state = setup_state();
+    });
+    auto state = luau::new_state({
+        .useratom = user_atom,
+        .globals = globals,
+    });
     auto L = state.get();
     register_path(L);
     open_filesystem(L, {.name = "filesystem"});
     open_json(L, {.name = "json"});
     open_fileio(L, {.name = "fileio"});
     luaL_sandbox(L);
+    return state;
+}
 
-    auto expected = load_script(state.get(), "abc.luau");
+auto main() -> int {
+    auto state = setup_state();
+    auto L = state.get();
+
+    auto expected = load_script(L, "abc.luau");
     if (!expected) {
         std::println("\033[35mError: {}\033[0m", expected.error());
         return -1;

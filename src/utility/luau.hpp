@@ -7,23 +7,75 @@
 #include <cstddef>
 #include <expected>
 #include <span>
-#include "lualib.h"
+#include <lualib.h>
+#include <luacode.h>
+#include <luacodegen.h>
 #include <functional>
+#include <memory>
 // general luau utility
 namespace luau {
 using state_t = lua_State*;
+using state_owner_t = std::unique_ptr<lua_State, decltype(&lua_close)>;
+using copts_t = lua_CompileOptions;
 constexpr auto none = 0;
 struct nil_t{};
 constexpr nil_t nil{};
-
-inline auto load(state_t L, std::span<const char> bytecode, const std::string& chunkname, int env = 0) -> std::expected<void, std::string> {
-    auto ok = LUA_OK == luau_load(L, chunkname.c_str(), bytecode.data(), bytecode.size(), env);
+namespace codegen {
+constexpr auto create(state_t L) -> bool {
+    auto const supported = luau_codegen_supported();
+    if (supported) luau_codegen_create(L);
+    return supported;
+}
+constexpr auto compile(state_t L, int idx) {
+    luau_codegen_compile(L, idx);
+} 
+}
+using useratom_callback_t = int16_t(*)(const char*, size_t);
+struct new_state_options {
+    bool codegen = true;
+    bool openlibs = true;
+    useratom_callback_t useratom = nullptr;
+    std::span<luaL_Reg> globals = {};
+    bool sandbox = false;
+};
+constexpr auto new_state(new_state_options const& opt = {}) -> state_owner_t {
+    auto L = luaL_newstate();
+    if (opt.useratom) lua_callbacks(L)->useratom = opt.useratom;
+    if (opt.codegen) codegen::create(L);
+    if (opt.openlibs) luaL_openlibs(L);
+    if (not opt.globals.empty()) {
+        lua_pushvalue(L, LUA_GLOBALSINDEX);
+        for (auto const& [name, fn] : opt.globals) {
+            if (not name or not fn) continue; 
+            lua_pushcfunction(L, fn, name);
+            lua_setfield(L, -2, name);
+        }
+        lua_pop(L, 1);
+    }
+    return state_owner_t{L, lua_close};
+}
+struct load_options {
+    int env = 0;
+    bool codegen = true;
+};
+inline auto load(state_t L, std::span<char const> bytecode, std::string const& chunkname, load_options const& opts = {}) -> std::expected<void, std::string> {
+    auto ok = LUA_OK == luau_load(L, chunkname.c_str(), bytecode.data(), bytecode.size(), opts.env);
     if (!ok) {
         std::string errmsg = lua_tostring(L, -1);
         lua_pop(L, 1);
         return std::unexpected(errmsg);
     }
+    if (opts.codegen) {
+        luau_codegen_compile(L, -1);
+    }
     return {};
+}
+inline auto compile(std::string_view source, copts_t& options) -> std::vector<char> {
+    auto outsize = size_t{};
+    auto raw = luau_compile(source.data(), source.size(), &options, &outsize);
+    auto bytecode = std::vector<char>{raw, raw + outsize};
+    std::free(raw);
+    return bytecode;
 }
 
 constexpr auto push(state_t L, std::string_view v) -> int {
