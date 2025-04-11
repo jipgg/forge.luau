@@ -12,30 +12,45 @@
 #include <print>
 namespace fs = std::filesystem;
 namespace rgs = std::ranges;
+using cstr_t = const char*;
+using std::string;
 
 static bool codegen = true;
 
-static auto copts() -> Luau::CompileOptions {
-    Luau::CompileOptions result = {};
-    result.optimizationLevel = 2;
-    result.debugLevel = 3;
-    result.typeInfoLevel = 1;
-    result.coverageLevel = 2;
-    const char* userdata_types[] ={
+// static auto copts() -> Luau::CompileOptions {
+//     Luau::CompileOptions result = {};
+//     result.optimizationLevel = 2;
+//     result.debugLevel = 3;
+//     result.typeInfoLevel = 1;
+//     result.coverageLevel = 2;
+//     cstr_t userdata_types[] ={
+//         path_name(),
+//         nullptr
+//     };
+//     result.userdataTypes = userdata_types;
+//     return result;
+// }
+static auto compile_options() -> lua_CompileOptions {
+    static cstr_t userdata_types[] = {
         path_name(),
         nullptr
     };
-    result.userdataTypes = userdata_types;
-    return result;
+    return {
+        .optimizationLevel = 2,
+        .debugLevel = 3,
+        .typeInfoLevel = 2,
+        .coverageLevel = 2,
+        .userdataTypes = userdata_types,
+    };
 }
 static auto loadstring(state_t L) -> int {
-    size_t l = 0;
-    const char* s = luaL_checklstring(L, 1, &l);
-    const char* chunkname = luaL_optstring(L, 2, s);
+    auto l = size_t{};
+    auto s = luaL_checklstring(L, 1, &l);
+    auto chunkname = luaL_optstring(L, 2, s);
     lua_setsafeenv(L, LUA_ENVIRONINDEX, false);
-    std::string bytecode = Luau::compile(std::string(s, l), copts());
+    auto bytecode = luau::compile({s, l}, compile_options());
 
-    return *luau::load(L, bytecode, chunkname)
+    return *luau::load(L, bytecode, {.chunkname = chunkname})
     .transform([] {
         return 1;
     }).transform_error([&](std::string err) {
@@ -47,22 +62,22 @@ static auto loadstring(state_t L) -> int {
 // i should make my own require resolver mechanism eventually
 // this code is crazy
 struct require_context: public RequireResolver::RequireContext {
-    require_context(std::string source): source(std::move(source)) {}
-    auto getPath() -> std::string override {return source.substr(1);}
+    require_context(string const& source): source(source) {}
+    auto getPath() -> string override {return source.substr(1);}
     auto isRequireAllowed() -> bool override {
         return isStdin() || (!source.empty() && source[0] == '@');
     }
     auto isStdin() -> bool override {
         return source == "=stdin";
     }
-    auto createNewIdentifer(const std::string& path) -> std::string override {
+    auto createNewIdentifer(string const& path) -> string override {
         return "@" + path;
     }
-    std::string source;
+    string source;
 };
 struct cache_manager: public RequireResolver::CacheManager {
     cache_manager(state_t state): state(state) {}
-    auto isCached(const std::string& path) -> bool override {
+    auto isCached(string const& path) -> bool override {
         luaL_findtable(state, LUA_REGISTRYINDEX, "_MODULES", 1);
         lua_getfield(state, -1, path.c_str());
         bool cached = !lua_isnil(state, -1);
@@ -70,19 +85,19 @@ struct cache_manager: public RequireResolver::CacheManager {
         if (cached) cache_key = path;
         return cached;
     }
-    std::string cache_key;
+    string cache_key;
     state_t state;
 };
 constexpr auto cached = RequireResolver::ModuleStatus::Cached;
 struct error_handler: RequireResolver::ErrorHandler {
     error_handler(state_t state): state() {}
-    void reportError(const std::string message) override {
+    void reportError(string const message) override {
         luaL_errorL(state, "%s", message.c_str());
     }
     state_t state;
 };
 static auto resolve_require(state_t L) -> decltype(auto) {
-    auto name = std::string(luaL_checkstring(L, 1));
+    auto name = string(luaL_checkstring(L, 1));
     auto ar = lua_Debug{};
     lua_getinfo(L, 1, "s", &ar);
     auto rc = require_context{ar.source};
@@ -97,14 +112,13 @@ static auto resolve_require(state_t L) -> decltype(auto) {
     });
 }
 
-static auto require(lua_State* L) -> int {
+static auto require(state_t L) -> int {
     auto finish = [&] {
         if (lua_isstring(L, -1)) lua_error(L);
         return 1;
     };
     auto resolved = resolve_require(L);
-
-    if (resolved.status == cached) return finish();
+    if (resolved.status == cached) return 1;
 
     // module needs to run in a new thread, isolated from the rest
     // note: we create ML on main thread so that it doesn't inherit environment of L
@@ -116,35 +130,28 @@ static auto require(lua_State* L) -> int {
     luaL_sandboxthread(ML);
 
     // now we can compile & run module on the new thread
-    std::string bytecode = Luau::compile(resolved.sourceCode, copts());
-    if (luau_load(ML, resolved.identifier.c_str(), bytecode.data(), bytecode.size(), 0) == 0) {
-        if (codegen) {
-            Luau::CodeGen::CompilationOptions nativeOptions;
-            Luau::CodeGen::compile(ML, -1, nativeOptions);
-        }
-
-        int status = lua_resume(ML, L, 0);
-        if (status == 0) {
-            if (lua_gettop(ML) == 0)
-                lua_pushstring(ML, "module must return a value");
-            else if (!lua_istable(ML, -1) && !lua_isfunction(ML, -1))
-                lua_pushstring(ML, "module must return a table or function");
-        }
-        else if (status == LUA_YIELD) {
-            lua_pushstring(ML, "module can not yield");
-        }
-        else if (!lua_isstring(ML, -1)) {
-            lua_pushstring(ML, "unknown error while running module");
-        }
+    //std::string bytecode = Luau::compile(resolved.sourceCode, copts());
+    auto loaded_correctly = luau::compile_and_load(ML, resolved.sourceCode, compile_options(), {
+        .chunkname = resolved.identifier
+    });
+    if (not loaded_correctly) {
+        luau::push(L, loaded_correctly.error());
+        lua_error(L);
     }
-
-    // there's now a return value on top of ML; L stack: _MODULES ML
+    switch (lua_resume(ML, L, 0)) {
+        case LUA_OK:
+            if (lua_gettop(ML) == 0) {
+                luaL_errorL(L, "module must return a value");
+            }
+            break;
+        case LUA_YIELD:
+            luaL_errorL(L, "module can not yield");
+            break;
+    }
     lua_xmove(ML, L, 1);
     lua_pushvalue(L, -1);
     lua_setfield(L, -4, resolved.absolutePath.c_str());
-
-    // L stack: _MODULES ML result
-    return finish();
+    return 1;
 }
 
 static int collectgarbage(lua_State* L) {
@@ -167,11 +174,10 @@ auto load_script(state_t L, fs::path const& path) -> std::expected<state_t, std:
     }
     std::string line, contents;
     while (std::getline(file, line)) contents.append(line + '\n');
-    auto bytecode = Luau::compile(contents, copts());
-    auto chunkname = std::format("@{}", normalizePath(path.string()));
 
-    return luau::load(script_thread, bytecode, chunkname)
-    .transform([&] {
+    return luau::compile_and_load(script_thread, contents, compile_options(), {
+        .chunkname = std::format("@{}", normalizePath(path.string()))
+    }).transform([&] {
         return script_thread;
     }).transform_error([](auto err) {
         return std::format("Loading error: {}", err);

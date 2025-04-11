@@ -1,5 +1,6 @@
 local module = require('./some_module')
-print(module.abc)
+print(module)
+--module.yo()
 local abc = {a = 123, b = "hello", c = true, d = {e = 1, f=2, g=3, h=4}, g = {1, 2, 3, 4, 5}}
 local e = json.to_json(abc)
 local parsed: typeof(abc) = json.parse(e)
@@ -7,6 +8,7 @@ local test_file = filesystem.path("test_file")
 fileio.write_file(test_file, "yoyoyoyo")
 print(fileio.read_file(test_file))
 filesystem.remove(test_file)
+
 
 local path = filesystem.current_path() / "src"
 local aee = filesystem.temp_directory_path()
