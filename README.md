@@ -1,3 +1,1 @@
-In essence, plain luau with some baked in libraries.
-Nothing more, nothing less.
-Purely utility focused for casual automation.
+In essence, plain luau with some baked in libraries for personal usage. Far from being in a general usable state right now and mainly just having fun messing around with C++23 features.
