@@ -1,6 +1,6 @@
 export type copy_options_t = "recursive" | "update existing" | "skip existing" | "create symlinks" | "copy symlinks" | "overwrite existing" | "directories only" | "create hard links" | "none"
 export type path_t = path | string
-type builtin_filesystem_library = {
+type builtin_filesystem = {
     rename: (from: path_t, to: path_t) -> (),
     remove: (path: path_t) -> boolean,
     remove_all: (path: path_t) -> number,
@@ -23,10 +23,30 @@ type builtin_filesystem_library = {
     create_directories: (path: path_t) -> boolean,
     path: (path: string) -> path,
 }
-type builtin_json_library = {
+type builtin_json = {
     parse: <Ty>(json: string) -> Ty,
     to_json: <Ty>(json: Ty) -> string,
 }
+type builtin_process = {
+    system: (command: string) -> number,
+    args: {string},
+}
+type builtin_fileio = {
+    write_all: (file_path: path_t, contents: string) -> (),
+    read_all: (file_path: path_t) -> string,
+    open_writer: (file: path_t) -> file_writer,
+    open_append_writer: (file: path_t) -> file_writer,
+}
+type builtin_io = {
+    stdin: () -> string,
+    stderr: (txt: string) -> (),
+    stdout: (txt: string) -> (),
+}
+declare class file_writer
+    function write(self, str: string): ()
+    function close(self): ()
+    function __add(self, other: any): file_writer
+end
 declare class path
     directory: path
     function string(self): string
@@ -42,12 +62,12 @@ declare class path
     function replace_filename(self, replacement: string): path
     function __div(self, other: path_t): path
 end
-type builtin_fileio_library = {
-    write_file: (file_path: path_t, contents: string) -> (),
-    read_file: (file_path: path_t) -> string,
+declare builtin: {
+    process: builtin_process,
+    filesystem: builtin_filesystem,
+    json: builtin_json,
+    io: builtin_io,
+    fileio: builtin_fileio,
 }
-declare filesystem: builtin_filesystem_library
-declare json: builtin_json_library
-declare fileio: builtin_fileio_library
 
 declare collectgarbage: (("collect") -> ()) & (("count") -> number)

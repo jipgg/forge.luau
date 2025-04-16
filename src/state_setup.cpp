@@ -32,7 +32,8 @@ static bool codegen = true;
 // }
 static auto compile_options() -> lua_CompileOptions {
     static cstr_t userdata_types[] = {
-        path_name(),
+        path_builder_t::name,
+        file_writer_builder_t::name,
         nullptr
     };
     return {
@@ -205,26 +206,12 @@ auto setup_state() -> state_owner_t {
     });
     auto L = state.get();
     register_path(L);
-    open_filesystem(L, {.name = "filesystem"});
-    open_json(L, {.name = "json"});
-    open_fileio(L, {.name = "fileio"});
+    register_file_writer(L);
+    lua_newtable(L);
+    open_filesystem(L, {.name = "filesystem", .local = true});
+    open_json(L, {.name = "json", .local = true});
+    open_fileio(L, {.name = "fileio", .local = true});
+    lua_setglobal(L, "builtin");
     luaL_sandbox(L);
     return state;
-}
-
-auto main() -> int {
-    auto state = setup_state();
-    auto L = state.get();
-
-    auto expected = load_script(L, "abc.luau");
-    if (!expected) {
-        std::println("\033[35mError: {}\033[0m", expected.error());
-        return -1;
-    }
-
-    auto status = lua_resume(*expected, state.get(), 0);
-    if (status != LUA_OK) {
-        std::println("\033[35mError: {}\033[0m", luaL_checkstring(*expected, -1));
-    }
-    return 0;
 }

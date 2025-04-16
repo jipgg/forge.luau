@@ -63,7 +63,7 @@ static auto iterator_closure(state_t L) -> int {
     if (it != end) {
         const fs::directory_entry& entry = *it;
         auto path = entry.path();
-        push_path(L, path);
+        path_builder_t::push(L, path);
         ++it;
         return 1;
     }
@@ -101,7 +101,7 @@ static auto remove_all(state_t L) -> int {
     return 1;
 } 
 static auto current_path(state_t L) -> int {
-    return push_path(L, fs::current_path());
+    return path_builder_t::push(L, fs::current_path());
 }
 static auto exists(state_t L) -> int {
     return luau::push(L, fs::exists(to_path(L, 1)));
@@ -117,7 +117,7 @@ static auto temp_directory_path(state_t L) -> int {
     std::error_code ec{};
     auto path = fs::temp_directory_path(ec);
     if (ec) luaL_errorL(L, "%s", ec.message().c_str());
-    return push_path(L, path);
+    return path_builder_t::push(L, path);
 }
 static auto equivalent(state_t L) -> int {
     std::error_code ec{};
@@ -129,19 +129,19 @@ static auto weakly_canonical(state_t L) -> int {
     std::error_code ec{};
     auto path = fs::weakly_canonical(to_path(L, 1), ec);
     error_on_code(L, ec);
-    return push_path(L, path);
+    return path_builder_t::push(L, path);
 }
 static auto canonical(state_t L) -> int {
     std::error_code ec{};
     auto path = fs::canonical(to_path(L, 1), ec);
     error_on_code(L, ec);
-    return push_path(L, path);
+    return path_builder_t::push(L, path);
 }
 static auto absolute(state_t L) -> int {
     std::error_code ec{};
     auto path = fs::absolute(to_path(L, 1), ec);
     error_on_code(L, ec);
-    return push_path(L, path);
+    return path_builder_t::push(L, path);
 }
 static auto copy(state_t L) -> int {
     std::error_code ec{};
@@ -197,7 +197,7 @@ static auto create_directories(state_t L) -> int {
     return luau::push(L, result);
 }
 static auto path(state_t L) -> int {
-    return push_path(L, luaL_checkstring(L, 1));
+    return path_builder_t::push(L, luaL_checkstring(L, 1));
 }
 
 void open_filesystem(state_t L, library_config config) {

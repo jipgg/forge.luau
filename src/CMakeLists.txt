@@ -1,8 +1,10 @@
 add_executable(executable
-    main.cpp
+    cli.cpp
+    state_setup.cpp
     filesystem.cpp
     json.cpp
     fileio.cpp
+    file_writer.cpp
     path.cpp
 )
 

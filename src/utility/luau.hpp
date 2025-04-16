@@ -170,7 +170,37 @@ constexpr auto tostring_tuple(lua_State* L, tostring_format_options const& opts 
     return message;
 }
 constexpr void pop(state_t L, int amount = 1) {
+    lua_pop(L, amount);
 }
+class ref {
+    std::shared_ptr<int> shared_;
+public:
+    ref(): shared_(nullptr) {}
+    ref(state_t L, int idx): shared_(std::make_shared<int>(lua_ref(L, idx))) {}
+    void unref() {shared_.reset();}
+    auto is_nil() const -> bool {return shared_ == nullptr;}
+    operator bool() {return is_nil();}
+    ~ref() {unref();}
+    auto push(state_t L) const -> int {
+        if (is_nil()) return 0;
+        lua_getref(L, *shared_);
+        return 1;
+    }
+    auto rawequal(state_t L, int idx) const -> bool {
+        lua_pushvalue(L, idx);
+        push(L);
+        auto eq = lua_rawequal(L, -1, -2);
+        lua_pop(L, 2);
+        return eq;
+    }
+    auto rawequal(state_t L, ref const& ref) const -> bool {
+        ref.push(L);
+        push(L);
+        auto eq = lua_rawequal(L, -1, -2);
+        lua_pop(L, 2);
+        return eq;
+    }
+};
 namespace detail {
     inline int new_tag() {
         static int tag{};
