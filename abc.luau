@@ -1,4 +1,5 @@
 local aux = require('@auxiliary')
+local result = require('@auxiliary/result')
 local fs = builtin.filesystem
 local fio = builtin.fileio
 local mf = aux.multicast{
@@ -14,6 +15,18 @@ local mf = aux.multicast{
 local fn = function(a: number, e: string)
     return 3
 end
+local r = result.wrap(function(a: number)
+    error("gggg")
+    return 1
+end)
+if r:has_error() then
+    print(`err result is {r:error()}`)
+else 
+    print(`result is {r:value()}`)
+end
+result.transform(r, function(v)
+    return tostring(v)
+end)
 print(`mf count {mf:size()}`)
 mf += fn
 print(`mf count {#mf}`)
