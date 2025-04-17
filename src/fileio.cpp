@@ -41,22 +41,36 @@ static auto read_file(state_t L) -> int {
 }
 static auto open_writer(state_t L) -> int {
     auto path = to_path(L, 1);
-    auto& file = file_writer_builder_t::make(L, path);
-    check_open(L, path, file);
+    auto append_mode = luaL_optboolean(L, 2, false);
+    auto file = std::ofstream{};
+    if (append_mode) {
+        check_open(L, path, filewriter_builder_t::make(L, path, std::ios::app));
+    } else {
+        check_open(L, path, filewriter_builder_t::make(L, path));
+    }
     return 1;
 }
-static auto open_append_writer(state_t L) -> int {
+static auto append(state_t L) -> int {
     auto path = to_path(L, 1);
-    auto& file = file_writer_builder_t::make(L, path, std::ios::app);
+    auto file = std::ofstream{path, std::ios::app};
     check_open(L, path, file);
-    return 1;
+    file << luaL_checkstring(L, 2);
+    return luau::none;
+}
+static auto append_line(state_t L) -> int {
+    auto path = to_path(L, 1);
+    auto file = std::ofstream{path, std::ios::app};
+    check_open(L, path, file);
+    file << luaL_checkstring(L, 2) << std::endl;
+    return luau::none;
 }
 void open_fileio(state_t L, library_config config) {
     const luaL_Reg fileio[] = {
-        {"write_all", write_file},
+        {"write", write_file},
         {"read_all", read_file},
         {"open_writer", open_writer},
-        {"open_append_writer", open_append_writer},
+        {"append_line", append_line},
+        {"append", append},
         {nullptr, nullptr}
     };
     config.apply(L, fileio);

@@ -33,7 +33,7 @@ static bool codegen = true;
 static auto compile_options() -> lua_CompileOptions {
     static cstr_t userdata_types[] = {
         path_builder_t::name,
-        file_writer_builder_t::name,
+        filewriter_builder_t::name,
         nullptr
     };
     return {
@@ -206,7 +206,7 @@ auto setup_state() -> state_owner_t {
     });
     auto L = state.get();
     register_path(L);
-    register_file_writer(L);
+    register_filewriter(L);
     lua_newtable(L);
     open_filesystem(L, {.name = "filesystem", .local = true});
     open_json(L, {.name = "json", .local = true});

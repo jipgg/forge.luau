@@ -71,6 +71,15 @@ inline auto load(state_t L, std::span<char const> bytecode, load_options const& 
     }
     return {};
 }
+inline auto pcall(state_t L, int argn = 0, int resultn = 0, int errfn = 0) -> std::expected<void, std::string> {
+    int r = lua_pcall(L, argn, resultn, errfn);
+    if (r != LUA_OK) {
+        auto err = std::string(lua_tostring(L, -1));
+        lua_pop(L, 1);
+        return std::unexpected(err);
+    }
+    return {};
+}
 inline auto compile(std::string_view source, lua_CompileOptions options = {}) -> std::vector<char> {
     auto outsize = size_t{};
     auto raw = luau_compile(source.data(), source.size(), &options, &outsize);

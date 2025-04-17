@@ -199,6 +199,11 @@ static auto create_directories(state_t L) -> int {
 static auto path(state_t L) -> int {
     return path_builder_t::push(L, luaL_checkstring(L, 1));
 }
+static auto find_in_environment(state_t L) -> int {
+    auto env = std::getenv(luaL_checkstring(L, 1));
+    if (not env) return luau::push(L, luau::nil);
+    else return path_builder_t::push(L, env);
+}
 
 void open_filesystem(state_t L, library_config config) {
     const luaL_Reg filesystem[] = {
@@ -223,6 +228,7 @@ void open_filesystem(state_t L, library_config config) {
         {"create_directory_symlink", create_directory_symlink},
         {"create_directories", create_directories},
         {"path", path},
+        {"find_in_environment", find_in_environment},
         {nullptr, nullptr}
     };
     config.apply(L, filesystem);

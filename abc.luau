@@ -1,21 +1,38 @@
-local module = require('./some_module')
-local fio = builtin.fileio
+local aux = require('@auxiliary')
 local fs = builtin.filesystem
-print(module)
+local fio = builtin.fileio
+local mf = aux.multicast{
+    functions = {
+        function(a: number, b: string)
+            return 1
+        end,
+        function(e: number, f: string)
+            return ""
+        end
+    }
+}
+local fn = function(a: number, e: string)
+    return 3
+end
+print(`mf count {mf:size()}`)
+mf += fn
+print(`mf count {#mf}`)
+mf(1, "eee")
+mf -= fn
+print(`mf count {#mf}`)
 --module.yo()
 local abc = {a = 123, b = "hello", c = true, d = {e = 1, f=2, g=3, h=4}, g = {1, 2, 3, 4, 5}}
 local e = builtin.json.to_json(abc)
 local parsed: typeof(abc) = builtin.json.parse(e)
-local test_file = builtin.filesystem.path("test_file")
-local test_writer = fio.open_append_writer(test_file)
-test_writer += "yoyoyoyoy\n"
-test_writer:close()
-print(fio.read_all(test_file))
+local path = builtin.filesystem.current_path() / "test_file"
+assert(fio.open_writer(path):scope(function(writer)
+    writer ..= "yoyoyoyoyoyoyoyy\n"
+end))
+print(builtin.fileio.read_all(path))
 
-
-local path = fs.current_path() / "src"
+local src = fs.current_path() / "src"
 local aee = fs.temp_directory_path()
-for sub_path in fs.directory_iterator(path) do
+for sub_path in fs.directory_iterator(src) do
     local canonical = fs.canonical(sub_path)
     print(`{canonical}; {canonical:generic_string()}`)
 end

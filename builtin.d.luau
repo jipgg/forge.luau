@@ -1,6 +1,6 @@
 export type copy_options_t = "recursive" | "update existing" | "skip existing" | "create symlinks" | "copy symlinks" | "overwrite existing" | "directories only" | "create hard links" | "none"
 export type path_t = path | string
-type builtin_filesystem = {
+export type __builtin_filesystem = {
     rename: (from: path_t, to: path_t) -> (),
     remove: (path: path_t) -> boolean,
     remove_all: (path: path_t) -> number,
@@ -22,30 +22,58 @@ type builtin_filesystem = {
     create_directory_symlink: (to: path_t, new_symlink: path_t) -> (),
     create_directories: (path: path_t) -> boolean,
     path: (path: string) -> path,
+    find_in_environment: (environment_variable: string) -> path?,
 }
-type builtin_json = {
+export type __builtin_json = {
     parse: <Ty>(json: string) -> Ty,
     to_json: <Ty>(json: Ty) -> string,
 }
-type builtin_process = {
+export type __builtin_process = {
     system: (command: string) -> number,
     args: {string},
 }
-type builtin_fileio = {
-    write_all: (file_path: path_t, contents: string) -> (),
+export type __builtin_fileio = {
+    write: (file_path: path_t, contents: string) -> (),
     read_all: (file_path: path_t) -> string,
-    open_writer: (file: path_t) -> file_writer,
-    open_append_writer: (file: path_t) -> file_writer,
+    open_writer: (file: path_t, append_mode: boolean?) -> filewriter,
+    append_line: (file: path_t, line: string) -> (),
+    append: (file: path_t, txt: string) -> (),
 }
-type builtin_io = {
+export type __builtin_io = {
     stdin: () -> string,
     stderr: (txt: string) -> (),
     stdout: (txt: string) -> (),
 }
-declare class file_writer
+export type __builtin = {
+    process: __builtin_process,
+    filesystem: __builtin_filesystem,
+    json: __builtin_json,
+    io: __builtin_io,
+    fileio: __builtin_fileio,
+}
+
+export type __filewriter_scoped_ref = typeof(setmetatable(
+    {} :: _Filewriter_scoped_ref,
+    {} :: _Filewriter_scoped_ref_metatable
+))
+type _Filewriter_scoped_ref_metatable = {
+    __concat: <T>(self: __filewriter_scoped_ref, other: T) -> __filewriter_scoped_ref,
+}
+type _Filewriter_scoped_ref = {
+    write: (self: __filewriter_scoped_ref, str: string) -> (),
+    is_open: (self: __filewriter_scoped_ref) -> boolean,
+    line_iterator: (self: __filewriter_scoped_ref) -> (() -> string?),
+    eof: (self: __filewriter_scoped_ref) -> boolean,
+}
+export type __filewriter_scope_fn = (self: __filewriter_scoped_ref) -> ()
+declare class filewriter
     function write(self, str: string): ()
+    function is_open(self): boolean
     function close(self): ()
-    function __add(self, other: any): file_writer
+    function line_iterator(self): (() -> string?)
+    function scope(self, fn: __filewriter_scope_fn): (boolean?, string)
+    function eof(self): boolean
+    function __concat(self, other: any): filewriter
 end
 declare class path
     directory: path
@@ -62,12 +90,6 @@ declare class path
     function replace_filename(self, replacement: string): path
     function __div(self, other: path_t): path
 end
-declare builtin: {
-    process: builtin_process,
-    filesystem: builtin_filesystem,
-    json: builtin_json,
-    io: builtin_io,
-    fileio: builtin_fileio,
-}
+declare builtin: __builtin
 
 declare collectgarbage: (("collect") -> ()) & (("count") -> number)

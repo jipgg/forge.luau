@@ -47,10 +47,10 @@ template<> inline const char* path_builder_t::name{"path"};
 void register_path(state_t L);
 auto to_path(state_t L, int idx) -> path_t;
 
-using file_writer_t = std::ofstream;
-using file_writer_builder_t = luau::generic_userdatatagged_builder<file_writer_t>;
-template<> inline const char* file_writer_builder_t::name{"file_writer"};
-void register_file_writer(state_t L);
+using filewriter_t = std::ofstream;
+using filewriter_builder_t = luau::generic_userdatatagged_builder<filewriter_t>;
+template<> inline const char* filewriter_builder_t::name{"filewriter"};
+void register_filewriter(state_t L);
 
 enum class method_name {
     read_all,
@@ -80,6 +80,11 @@ enum class method_name {
     print,
     write,
     writeln,
+    flush,
+    is_open,
+    scope,
+    line_iterator,
+    eof,
     close,
     COMPILE_TIME_ENUM_SENTINEL
 };
