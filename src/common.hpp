@@ -11,25 +11,47 @@
 #include <cassert>
 using state_t = lua_State*;
 using state_owner_t = std::unique_ptr<lua_State, decltype(&lua_close)>;
+using library_loader_t = std::function<void(state_t L)>;
+
+struct args_wrapper {
+    std::span<char*> data;
+    auto view() const -> decltype(auto) {
+        return std::views::transform(data, [](auto v) -> std::string_view {return v;});
+    }
+    auto operator[](size_t idx) const -> std::optional<std::string_view> {
+        if (idx >= data.size()) return std::nullopt;
+        return data[idx];
+    }
+    args_wrapper(int argc, char** argv): data(argv, argv + argc) {}
+    explicit args_wrapper(std::span<char*> data): data(data) {}
+    explicit args_wrapper(): data() {}
+};
 
 struct library_config {
     const char* name = nullptr;
     bool local = false;
-    void apply(state_t L, const luaL_Reg* lib) {
+    void apply(state_t L, library_loader_t loader) {
         if (local) {
             lua_newtable(L);
-            luaL_register(L, nullptr, lib);
+            loader(L);
             if (name) lua_setfield(L, -2, name);
             return;
         } else if (name) {
-            luaL_register(L, name, lib);
+            lua_newtable(L);
+            loader(L);
+            lua_setglobal(L, name);
             return;
         } else {
             lua_pushvalue(L, LUA_GLOBALSINDEX);
-            luaL_register(L, nullptr, lib);
+            loader(L);
             lua_pop(L, 1);
             return;
         }
+    }
+    void apply(state_t L, const luaL_Reg* lib) {
+        apply(L, [&lib](auto L) {
+            luaL_register(L, nullptr, lib);
+        });
     }
 };
 void open_global(state_t L, const library_config& config = {.name = nullptr});
@@ -37,6 +59,7 @@ void open_filesystem(state_t L, library_config config = {.name = "filesystem"});
 void open_fileio(state_t L, library_config config = {.name = "fileio"});
 void open_json(state_t L, library_config config = {.name = "json"});
 void open_process(state_t L, library_config config = {.name = "process"});
+auto get_args() -> args_wrapper const&;
 
 auto setup_state() -> state_owner_t;
 auto load_script(state_t L, const std::filesystem::path& path) -> std::expected<state_t, std::string>;
@@ -86,6 +109,7 @@ enum class method_name {
     line_iterator,
     eof,
     close,
+    close_after,
     COMPILE_TIME_ENUM_SENTINEL
 };
 

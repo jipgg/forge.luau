@@ -30,7 +30,7 @@ export type __builtin_json = {
 }
 export type __builtin_process = {
     system: (command: string) -> number,
-    args: {string},
+    arg_iterator: () -> (() -> string?),
 }
 export type __builtin_fileio = {
     write: (file_path: path_t, contents: string) -> (),
@@ -62,7 +62,6 @@ type _Filewriter_scoped_ref_metatable = {
 type _Filewriter_scoped_ref = {
     write: (self: __filewriter_scoped_ref, str: string) -> (),
     is_open: (self: __filewriter_scoped_ref) -> boolean,
-    line_iterator: (self: __filewriter_scoped_ref) -> (() -> string?),
     eof: (self: __filewriter_scoped_ref) -> boolean,
 }
 export type __filewriter_scope_fn = (self: __filewriter_scoped_ref) -> ()
@@ -70,8 +69,7 @@ declare class filewriter
     function write(self, str: string): ()
     function is_open(self): boolean
     function close(self): ()
-    function line_iterator(self): (() -> string?)
-    function scope(self, fn: __filewriter_scope_fn): (boolean?, string)
+    function close_after(self, fn: __filewriter_scope_fn): (boolean?, string)
     function eof(self): boolean
     function __concat(self, other: any): filewriter
 end

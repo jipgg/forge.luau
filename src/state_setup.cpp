@@ -17,19 +17,6 @@ using std::string;
 
 static bool codegen = true;
 
-// static auto copts() -> Luau::CompileOptions {
-//     Luau::CompileOptions result = {};
-//     result.optimizationLevel = 2;
-//     result.debugLevel = 3;
-//     result.typeInfoLevel = 1;
-//     result.coverageLevel = 2;
-//     cstr_t userdata_types[] ={
-//         path_name(),
-//         nullptr
-//     };
-//     result.userdataTypes = userdata_types;
-//     return result;
-// }
 static auto compile_options() -> lua_CompileOptions {
     static cstr_t userdata_types[] = {
         path_builder_t::name,
@@ -211,6 +198,7 @@ auto setup_state() -> state_owner_t {
     open_filesystem(L, {.name = "filesystem", .local = true});
     open_json(L, {.name = "json", .local = true});
     open_fileio(L, {.name = "fileio", .local = true});
+    open_process(L, {.name = "process", .local = true});
     lua_setglobal(L, "builtin");
     luaL_sandbox(L);
     return state;

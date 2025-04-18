@@ -6,6 +6,7 @@ add_executable(executable
     fileio.cpp
     filewriter.cpp
     path.cpp
+    process.cpp
 )
 
 target_link_libraries(executable PRIVATE

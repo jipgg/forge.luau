@@ -14,7 +14,7 @@ static auto writer_namecall(state_t L) -> int {
             return luau::none;
         case method_name::is_open:
             return luau::push(L, self.is_open());
-        case method_name::scope: {
+        case method_name::close_after: {
             lua_pushvalue(L, 2);
             lua_pushvalue(L, 1);
             auto return_values = *luau::pcall(L, 1).transform([&] {
