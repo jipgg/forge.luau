@@ -23,6 +23,7 @@ export type __builtin_filesystem = {
     create_directories: (path: path_t) -> boolean,
     path: (path: string) -> path,
     find_in_environment: (environment_variable: string) -> path?,
+    read_symlink: (symlink: path_t) -> path,
 }
 export type __builtin_json = {
     parse: <Ty>(json: string) -> Ty,
@@ -33,40 +34,44 @@ export type __builtin_process = {
     arg_iterator: () -> (() -> string?),
 }
 export type __builtin_fileio = {
-    write: (file_path: path_t, contents: string) -> (),
-    read_all: (file_path: path_t) -> string,
+    write_string: (file_path: path_t, contents: string) -> (),
+    write: (file_path: path_t, contents: buffer) -> (),
+    read_to_end: (file_path: path_t) -> buffer,
     open_writer: (file: path_t, append_mode: boolean?) -> filewriter,
     append_line: (file: path_t, line: string) -> (),
     append: (file: path_t, txt: string) -> (),
 }
-export type __builtin_io = {
-    stdin: () -> string,
-    stderr: (txt: string) -> (),
-    stdout: (txt: string) -> (),
+export type __builtin_consoleio = {
+    scan: () -> string,
+    read: (() -> buffer) & ((buf: buffer) -> ()) & ((count: number) -> buffer),
+    err_write: (txt: string) -> (),
+    write: (txt: string) -> (),
 }
 export type __builtin = {
-    process: __builtin_process,
-    filesystem: __builtin_filesystem,
+    proc: __builtin_process,
+    fs: __builtin_filesystem,
     json: __builtin_json,
-    io: __builtin_io,
-    fileio: __builtin_fileio,
+    fio: __builtin_fileio,
+    cio: __builtin_consoleio,
 }
 
 export type __filewriter_scoped_ref = typeof(setmetatable(
-    {} :: _Filewriter_scoped_ref,
-    {} :: _Filewriter_scoped_ref_metatable
+    {} :: _t_filewriter_scoped_ref,
+    {} :: _mt_filewriter_scoped_ref
 ))
-type _Filewriter_scoped_ref_metatable = {
+type _mt_filewriter_scoped_ref = {
     __concat: <T>(self: __filewriter_scoped_ref, other: T) -> __filewriter_scoped_ref,
 }
-type _Filewriter_scoped_ref = {
-    write: (self: __filewriter_scoped_ref, str: string) -> (),
+type _t_filewriter_scoped_ref = {
+    write_string: (self: __filewriter_scoped_ref, str: string) -> (),
+    write: (self: __filewriter_scoped_ref, buf: buffer) -> (),
     is_open: (self: __filewriter_scoped_ref) -> boolean,
     eof: (self: __filewriter_scoped_ref) -> boolean,
 }
 export type __filewriter_scope_fn = (self: __filewriter_scoped_ref) -> ()
 declare class filewriter
-    function write(self, str: string): ()
+    function write_string(self, str: string): ()
+    function write(self, buf: buffer): ()
     function is_open(self): boolean
     function close(self): ()
     function close_after(self, fn: __filewriter_scope_fn): (boolean?, string)

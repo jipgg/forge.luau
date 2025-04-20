@@ -3,6 +3,7 @@
 #include <concepts>
 #include <utility>
 #include <string_view>
+#include <ranges>
 #include <string>
 #include <cstddef>
 #include <expected>
@@ -90,6 +91,27 @@ inline auto compile(std::string_view source, lua_CompileOptions options = {}) ->
 inline auto compile_and_load(state_t L, std::string_view source, lua_CompileOptions const& copts = {}, load_options const& lopts = {}) -> std::expected<void, std::string> {
     auto bytecode = compile(source, copts);
     return load(L, bytecode, lopts);
+}
+template <std::ranges::sized_range Range>
+constexpr auto make_buffer(state_t L, Range&& range) -> std::span<std::ranges::range_value_t<Range>> {
+    using value_t = std::ranges::range_value_t<Range>;
+    auto const size = std::ranges::size(range);
+    void* p = lua_newbuffer(L, size * sizeof(value_t));
+    auto data = static_cast<value_t*>(p);
+    auto span = std::span<value_t>{data, data + size};
+    std::ranges::copy(range, span.begin());
+    return span;
+}
+template<class Ty = char>
+constexpr auto make_buffer(state_t L, size_t size) -> std::span<Ty> {
+    auto data = static_cast<Ty*>(lua_newbuffer(L, size * sizeof(Ty)));
+    return {data, data + size};
+}
+
+inline auto to_buffer(state_t L, int idx) -> std::span<char> {
+    auto size = size_t{};
+    auto data = static_cast<char*>(lua_tobuffer(L, idx, &size));
+    return {data, data + size};
 }
 
 constexpr auto push(state_t L, std::string_view v) -> int {

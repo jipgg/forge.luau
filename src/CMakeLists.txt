@@ -4,6 +4,7 @@ add_executable(executable
     filesystem.cpp
     json.cpp
     fileio.cpp
+    consoleio.cpp
     filewriter.cpp
     path.cpp
     process.cpp

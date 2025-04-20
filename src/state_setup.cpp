@@ -195,10 +195,11 @@ auto setup_state() -> state_owner_t {
     register_path(L);
     register_filewriter(L);
     lua_newtable(L);
-    open_filesystem(L, {.name = "filesystem", .local = true});
+    open_filesystem(L, {.name = "fs", .local = true});
     open_json(L, {.name = "json", .local = true});
-    open_fileio(L, {.name = "fileio", .local = true});
-    open_process(L, {.name = "process", .local = true});
+    open_fileio(L, {.name = "fio", .local = true});
+    open_consoleio(L, {.name = "cio", .local = true});
+    open_process(L, {.name = "proc", .local = true});
     lua_setglobal(L, "builtin");
     luaL_sandbox(L);
     return state;

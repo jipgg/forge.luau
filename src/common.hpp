@@ -57,6 +57,7 @@ struct library_config {
 void open_global(state_t L, const library_config& config = {.name = nullptr});
 void open_filesystem(state_t L, library_config config = {.name = "filesystem"});
 void open_fileio(state_t L, library_config config = {.name = "fileio"});
+void open_consoleio(state_t L, library_config config = {.name = "consoleio"});
 void open_json(state_t L, library_config config = {.name = "json"});
 void open_process(state_t L, library_config config = {.name = "process"});
 auto get_args() -> args_wrapper const&;
@@ -110,6 +111,7 @@ enum class method_name {
     eof,
     close,
     close_after,
+    write_string,
     COMPILE_TIME_ENUM_SENTINEL
 };
 

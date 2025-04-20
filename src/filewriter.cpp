@@ -6,7 +6,12 @@ static auto writer_namecall(state_t L) -> int {
     auto& self = builder_t::self(L);
     auto const [atom, name] = luau::namecall_atom<method_name>(L);
     switch (atom) {
-        case method_name::write:
+        case method_name::write: {
+            auto buf = luau::to_buffer(L, 2);
+            self.write(&buf.front(), buf.size());
+            return luau::none;
+        }
+        case method_name::write_string:
             self << luaL_checkstring(L, 2);
             return luau::none;
         case method_name::close:
