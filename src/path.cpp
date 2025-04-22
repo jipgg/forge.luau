@@ -2,12 +2,21 @@
 #include <format>
 #include <filesystem>
 #include "utility/luau.hpp"
+namespace fs = std::filesystem;
 
 static auto namecall(state_t L) -> int {
     auto& self = path_builder_t::self(L);
     const auto [atom, name] = luau::namecall_atom<method_name>(L);
     using mn = method_name;
     switch (atom) {
+        case mn::directory_iterator:
+            return push_directory_iterator(L, self, luaL_optboolean(L, 2, false));
+        case mn::is_directory:
+            return luau::push(L, fs::is_directory(self));
+        case mn::is_file:
+            return luau::push(L, fs::is_regular_file(self));
+        case mn::is_symlink:
+            return luau::push(L, fs::is_symlink(self));
         case mn::string:
             return luau::push(L, self.string());
         case mn::extension:

@@ -4,11 +4,31 @@
 #include "utility/luau.hpp"
 #include <string_view>
 #include <cassert>
+#include <expected>
+#ifdef _WIN32
+#include <Windows.h>
+#include <ShlObj.h>
+#endif
 namespace fs = std::filesystem;
 
 // util
 static void error_on_code(state_t L, const std::error_code& ec) {
     if (ec) luaL_errorL(L, "%s", ec.message().c_str());
+}
+static auto get_home_path() -> std::expected<fs::path, std::string> {
+    constexpr auto errmsg = "Failed to get HOME directory.";
+    #ifdef _WIN32
+        PWSTR path{};
+        if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Profile, 0, nullptr, &path))) {
+            auto home = std::wstring{path};
+            CoTaskMemFree(path);
+            return fs::path(home);
+        } else return std::unexpected(errmsg);
+    #else
+        if (auto home_dir = std::getenv("HOME")) {
+            return fs::path(home_dir);
+        } else return std::unexpected(errmsg);
+    #endif
 }
 static auto to_copy_options(std::string_view str) -> fs::copy_options {
     if (str == "recursive") {
@@ -56,40 +76,10 @@ static auto create_directory(state_t L) -> int {
     error_on_code(L, ec);
     return luau::push(L, result);
 }
-template <class Iterator>
-static auto iterator_closure(state_t L) -> int {
-    auto& it = luau::to_userdata<Iterator>(L, lua_upvalueindex(1));
-    const Iterator end{};
-    if (it != end) {
-        const fs::directory_entry& entry = *it;
-        auto path = entry.path();
-        path_builder_t::push(L, path);
-        ++it;
-        return 1;
-    }
-    return 0;
-}
 static auto directory_iterator(state_t L) -> int {
     const fs::path& directory = to_path(L, 1);
     const bool recursive = luaL_optboolean(L, 2, false);
-    if (not recursive) {
-        luau::make_userdata<fs::directory_iterator>(L, directory);
-        lua_pushcclosure(
-            L,
-            iterator_closure<fs::directory_iterator>,
-            "directory_iterator",
-            1
-        );
-    } else {
-        luau::make_userdata<fs::recursive_directory_iterator>(L, directory);
-        lua_pushcclosure(
-            L,
-            iterator_closure<fs::recursive_directory_iterator>,
-            "recursive_directory_iterator",
-            1
-        );
-    }
-    return 1;
+    return push_directory_iterator(L, directory, recursive);
 }
 static auto remove_all(state_t L) -> int {
     std::error_code ec{};
@@ -109,7 +99,7 @@ static auto exists(state_t L) -> int {
 static auto is_directory(state_t L) -> int {
     return luau::push(L, fs::is_directory(to_path(L, 1)));
 }
-static auto is_regular_file(state_t L) -> int {
+static auto is_file(state_t L) -> int {
     lua_pushboolean(L, fs::is_regular_file(to_path(L, 1)));
     return 1;
 }
@@ -210,6 +200,11 @@ static auto read_symlink(state_t L) -> int {
     error_on_code(L, ec);
     return path_builder_t::push(L, path);
 }
+static auto home_path(state_t L) -> int {
+    auto home = get_home_path();
+    if (not home) luaL_errorL(L, "%s", home.error().c_str());
+    return path_builder_t::push(L, home.value());
+}
 
 void open_filesystem(state_t L, library_config config) {
     const luaL_Reg filesystem[] = {
@@ -221,7 +216,7 @@ void open_filesystem(state_t L, library_config config) {
         {"exists", exists},
         {"current_path", current_path},
         {"is_directory", is_directory},
-        {"is_regular_file", is_regular_file},
+        {"is_file", is_file},
         {"temp_directory_path", temp_directory_path},
         {"equivalent", equivalent},
         {"weakly_canonical", weakly_canonical},
@@ -236,6 +231,7 @@ void open_filesystem(state_t L, library_config config) {
         {"path", path},
         {"find_in_environment", find_in_environment},
         {"read_symlink", read_symlink},
+        {"home_path", home_path},
         {nullptr, nullptr}
     };
     config.apply(L, filesystem);

@@ -67,14 +67,53 @@ auto load_script(state_t L, const std::filesystem::path& path) -> std::expected<
 
 using path_t = std::filesystem::path;
 using path_builder_t = luau::generic_userdatatagged_builder<path_t>;
-template<> inline const char* path_builder_t::name{"path"};
+template<> inline const char* path_builder_t::name{"__path"};
 void register_path(state_t L);
 auto to_path(state_t L, int idx) -> path_t;
 
 using filewriter_t = std::ofstream;
 using filewriter_builder_t = luau::generic_userdatatagged_builder<filewriter_t>;
-template<> inline const char* filewriter_builder_t::name{"filewriter"};
+template<> inline const char* filewriter_builder_t::name{"__filewriter"};
 void register_filewriter(state_t L);
+
+namespace detail {
+template <class Iterator>
+inline auto directory_iterator_closure(state_t L) -> int {
+    auto& it = luau::to_userdata<Iterator>(L, lua_upvalueindex(1));
+    const Iterator end{};
+    if (it != end) {
+        const std::filesystem::directory_entry& entry = *it;
+        auto path = entry.path();
+        path_builder_t::push(L, path);
+        ++it;
+        return 1;
+    }
+    return 0;
+}
+}
+inline auto push_directory_iterator(state_t L, path_t const& directory, bool recursive) -> int {
+    namespace fs = std::filesystem;
+    if (not fs::is_directory(directory)) {
+        luaL_errorL(L, "path '%s' must be a directory", directory.string().c_str());
+    }
+    if (not recursive) {
+        luau::make_userdata<fs::directory_iterator>(L, directory);
+        lua_pushcclosure(L,
+            detail::directory_iterator_closure<fs::directory_iterator>,
+            "directory_iterator",
+            1
+        );
+    } else {
+        luau::make_userdata<fs::recursive_directory_iterator>(L, directory);
+        lua_pushcclosure(
+            L,
+            detail::directory_iterator_closure<fs::recursive_directory_iterator>,
+            "recursive_directory_iterator",
+            1
+        );
+    }
+    return 1;
+}
 
 enum class method_name {
     read_all,
@@ -112,6 +151,11 @@ enum class method_name {
     close,
     close_after,
     write_string,
+    absolute,
+    is_directory,
+    is_file,
+    is_symlink,
+    directory_iterator,
     COMPILE_TIME_ENUM_SENTINEL
 };
 

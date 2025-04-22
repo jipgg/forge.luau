@@ -200,7 +200,7 @@ auto setup_state() -> state_owner_t {
     open_fileio(L, {.name = "fio", .local = true});
     open_consoleio(L, {.name = "cio", .local = true});
     open_process(L, {.name = "proc", .local = true});
-    lua_setglobal(L, "builtin");
+    lua_setglobal(L, "blt");
     luaL_sandbox(L);
     return state;
 }
