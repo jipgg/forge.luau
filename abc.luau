@@ -1,7 +1,7 @@
 --module.yo()
 local abc = {a = 123, b = "hello", c = true, d = {e = 1, f=2, g=3, h=4}, g = {1, 2, 3, 4, 5}}
-local e = builtin.json.to_json(abc)
-local parsed: typeof(abc) = builtin.json.parse(e)
+local to_json = builtin.json.to_json(abc)
+local parsed: typeof(abc) = builtin.json.parse(to_json)
 local path = builtin.fs.current_path() / "test_file"
 builtin.fio.open_writer(path, true):close_after(function(writer)
     writer:write(buffer.fromstring("abcdefg\n"))
@@ -30,7 +30,7 @@ local function add(a: number, b: number): number
 end
 print(add(1, 2))
 
-print(e, parsed.b, parsed.g[4])
+print(to_json, parsed.b, parsed.g[4])
 
 print(typeof(builtin.fs.current_path()))
 

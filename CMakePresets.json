@@ -11,14 +11,30 @@
                 "CMAKE_CXX_COMPILER": "g++-14",
                 "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/bin"
             }
+        },
+        {
+            "name": "windows",
+            "hidden": false,
+            "generator": "Visual Studio 17",
+            "binaryDir": "${sourceDir}/cmake",
+            "cacheVariables": {
+                "CMAKE_RUNTIME_OUTPUT_DIRECTORY": "${sourceDir}/bin"
+            }
         }
     ],
     "buildPresets": [
         {
-            "name": "luauxt-linux",
+            "name": "exe-linux",
             "configurePreset": "linux",
             "targets": [
-                "luauxt"
+                "executable"
+            ]
+        },
+        {
+            "name": "exe-windows",
+            "configurePreset": "windows",
+            "targets": [
+                "executable"
             ]
         }
     ]

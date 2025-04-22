@@ -9,9 +9,9 @@ static auto namecall(state_t L) -> int {
     using mn = method_name;
     switch (atom) {
         case mn::string:
-            return luau::push(L, self);
+            return luau::push(L, self.string());
         case mn::extension:
-            return luau::push(L, self.extension());
+            return luau::push(L, self.extension().string());
         case mn::has_extension:
             return luau::push(L, self.has_extension());
         case mn::replace_extension:
@@ -23,7 +23,7 @@ static auto namecall(state_t L) -> int {
         case mn::is_relative:
             return luau::push(L, self.is_relative());
         case mn::filename:
-            return luau::push(L, self.filename());
+            return luau::push(L, self.filename().string());
         case mn::has_filename:
             return luau::push(L, self.has_filename());
         case mn::replace_filename:

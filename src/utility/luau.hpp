@@ -22,12 +22,12 @@ constexpr auto none = 0;
 struct nil_t{};
 constexpr nil_t nil{};
 namespace codegen {
-constexpr auto create(state_t L) -> bool {
+inline auto create(state_t L) -> bool {
     auto const supported = luau_codegen_supported();
     if (supported) luau_codegen_create(L);
     return supported;
 }
-constexpr auto compile(state_t L, int idx) {
+inline auto compile(state_t L, int idx) {
     luau_codegen_compile(L, idx);
 } 
 }
@@ -39,7 +39,7 @@ struct new_state_options {
     std::span<luaL_Reg> globals = {};
     bool sandbox = false;
 };
-constexpr auto new_state(new_state_options const& opt = {}) -> state_owner_t {
+inline auto new_state(new_state_options const& opt = {}) -> state_owner_t {
     auto L = luaL_newstate();
     if (opt.useratom) lua_callbacks(L)->useratom = opt.useratom;
     if (opt.codegen) codegen::create(L);
@@ -58,7 +58,7 @@ constexpr auto new_state(new_state_options const& opt = {}) -> state_owner_t {
 struct load_options {
     int env = 0;
     bool codegen = true;
-    std::string const& chunkname = "anonymous";
+    std::string chunkname = "anonymous";
 };
 inline auto load(state_t L, std::span<char const> bytecode, load_options const& opts = {}) -> std::expected<void, std::string> {
     auto ok = LUA_OK == luau_load(L, opts.chunkname.c_str(), bytecode.data(), bytecode.size(), opts.env);
@@ -114,35 +114,35 @@ inline auto to_buffer(state_t L, int idx) -> std::span<char> {
     return {data, data + size};
 }
 
-constexpr auto push(state_t L, std::string_view v) -> int {
+inline auto push(state_t L, std::string_view v) -> int {
     lua_pushlstring(L, v.data(), v.size());
     return 1;
 }
-constexpr auto push(state_t L, cstr_t v) -> int {
+inline auto push(state_t L, cstr_t v) -> int {
     lua_pushstring(L, v);
     return 1;
 }
-constexpr auto push(state_t L, std::string const& v) -> int {
+inline auto push(state_t L, std::string const& v) -> int {
     lua_pushstring(L, v.c_str());
     return 1;
 }
-constexpr auto push(state_t L, ::luau::nil_t const& nil) -> int {
+inline auto push(state_t L, ::luau::nil_t const& nil) -> int {
     lua_pushnil(L);
     return 1;
 }
-constexpr auto push(state_t L, lua_CFunction fn) -> int {
+inline auto push(state_t L, lua_CFunction fn) -> int {
     lua_pushcfunction(L, fn, "anonymous");
     return 1;
 }
-constexpr auto push(state_t L, bool boolean) -> int {
+inline auto push(state_t L, bool boolean) -> int {
     lua_pushboolean(L, boolean);
     return 1;
 } 
-constexpr auto push(state_t L, double v) -> int {
+inline auto push(state_t L, double v) -> int {
     lua_pushnumber(L, v);
     return 1;
 }
-constexpr auto push(state_t L, int v) -> int {
+inline auto push(state_t L, int v) -> int {
     lua_pushinteger(L, v);
     return 1;
 }
@@ -168,7 +168,9 @@ constexpr auto namecall_atom(state_t L) -> std::pair<Ty, cstr_t> {
 template <class Ty,  class ...Params>
 requires std::constructible_from<Ty, Params&&...>
 constexpr auto make_userdata(state_t L, Params&&...args) -> Ty& {
-    auto dtor = [](auto ud) {static_cast<Ty*>(ud)->~Ty();};
+    auto dtor = [](void* ud) {
+        static_cast<Ty*>(ud)->~Ty();
+    };
     auto ud = static_cast<Ty*>(lua_newuserdatadtor(L, sizeof(Ty), dtor));
     std::construct_at(ud, std::forward<Params>(args)...);
     return *ud;
@@ -190,7 +192,7 @@ struct tostring_format_options {
     int start_index = 1;
     std::string_view separator = ", ";
 };
-constexpr auto tostring_tuple(lua_State* L, tostring_format_options const& opts = {}) -> std::string {
+inline auto tostring_tuple(lua_State* L, tostring_format_options const& opts = {}) -> std::string {
     const int top = lua_gettop(L);
     std::string message;
     for (int i{opts.start_index}; i <= top; ++i) {
@@ -200,7 +202,7 @@ constexpr auto tostring_tuple(lua_State* L, tostring_format_options const& opts 
     message.back() = '\n';
     return message;
 }
-constexpr void pop(state_t L, int amount = 1) {
+inline void pop(state_t L, int amount = 1) {
     lua_pop(L, amount);
 }
 class ref {
