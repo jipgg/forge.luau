@@ -74,15 +74,22 @@ static auto append_line(state_t L) -> int {
     file << luaL_checkstring(L, 2) << std::endl;
     return luau::none;
 }
-void open_fileio(state_t L, library_config config) {
-    const luaL_Reg fileio[] = {
+static void loader(state_t L) {
+    const luaL_Reg io[] = {
         {"write_string", write_string},
         {"write", write},
         {"read_to_end", read_to_end},
-        {"open_writer", open_writer},
+        {"open_fwriter", open_writer},
         {"append_line", append_line},
         {"append", append},
         {nullptr, nullptr}
     };
-    config.apply(L, fileio);
+    luaL_register(L, nullptr, io);
+    writer_builder_t::make(L, &std::cout);
+    lua_setfield(L, -2, "stdout");
+    writer_builder_t::make(L, &std::cerr);
+    lua_setfield(L, -2, "stderr");
+}
+void open_io(state_t L, library_config config) {
+    config.apply(L, loader);
 }

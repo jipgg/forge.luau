@@ -25,7 +25,8 @@ static std::unordered_multimap<std::string, exit_callback_t> exit_callbacks{};
 static auto compile_options() -> lua_CompileOptions {
     static cstr_t userdata_types[] = {
         path_builder_t::name,
-        filewriter_builder_t::name,
+        writer_builder_t::name,
+        fwriter_builder_t::name,
         nullptr
     };
     return {
@@ -220,14 +221,17 @@ auto setup_state() -> state_owner_t {
     }, state_closer);
     auto L = state.get();
     register_path(L);
-    register_filewriter(L);
+    register_writer(L);
+    register_file(L);
+    register_fwriter(L);
     lua_newtable(L);
-    open_filesystem(L, {.name = "filesystem", .local = true});
+    open_filesystem(L, {.name = "fs", .local = true});
     open_json(L, {.name = "json", .local = true});
     open_fileio(L, {.name = "file", .local = true});
     open_consoleio(L, {.name = "console", .local = true});
-    open_process(L, {.name = "process", .local = true});
-    lua_setglobal(L, "builtin");
+    open_process(L, {.name = "proc", .local = true});
+    open_io(L, {.name = "io", .local = true});
+    lua_setglobal(L, "etc");
     luaL_sandbox(L);
     return state;
 }

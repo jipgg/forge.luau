@@ -5,9 +5,12 @@ add_executable(executable
     json.cpp
     fileio.cpp
     consoleio.cpp
-    filewriter.cpp
+    io.cpp
+    fwriter.cpp
+    writer.cpp
     path.cpp
     process.cpp
+    file.cpp
 )
 
 target_link_libraries(executable PRIVATE

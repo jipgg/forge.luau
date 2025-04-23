@@ -43,6 +43,7 @@ void open_fileio(state_t L, library_config config = {.name = "fileio"});
 void open_consoleio(state_t L, library_config config = {.name = "consoleio"});
 void open_json(state_t L, library_config config = {.name = "json"});
 void open_process(state_t L, library_config config = {.name = "process"});
+void open_io(state_t L, library_config config = {.name = "io"});
 
 auto setup_state() -> state_owner_t;
 auto load_script(state_t L, const std::filesystem::path& path) -> std::expected<state_t, std::string>;
@@ -53,10 +54,19 @@ template<> inline const char* path_builder_t::name{"__path"};
 void register_path(state_t L);
 auto to_path(state_t L, int idx) -> path_t;
 
-using filewriter_t = std::ofstream;
-using filewriter_builder_t = luau::generic_userdatatagged_builder<filewriter_t>;
-template<> inline const char* filewriter_builder_t::name{"__filewriter"};
-void register_filewriter(state_t L);
+using writer_t = std::ostream*;
+using writer_builder_t = luau::generic_userdatatagged_builder<writer_t>;
+template <> inline const char* writer_builder_t::name{"__writer"};
+void register_writer(state_t L);
+auto try_writer_namecall(state_t L, writer_t writer, int atom) -> std::optional<int>;
+using fwriter_t = std::ofstream;
+using fwriter_builder_t = luau::generic_userdatatagged_builder<fwriter_t>;
+template<> inline const char* fwriter_builder_t::name{"__fwriter"};
+void register_fwriter(state_t L);
+using file_t = std::fstream;
+using file_builder_t = luau::generic_userdatatagged_builder<file_t>;
+template<> inline const char* file_builder_t::name{"file"};
+void register_file(state_t L);
 
 namespace detail {
 template <class Iterator>
@@ -133,6 +143,8 @@ enum class method_name {
     close,
     close_after,
     write_string,
+    println,
+    scan,
     absolute,
     is_directory,
     is_file,

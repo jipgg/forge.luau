@@ -53,6 +53,12 @@ static auto to_copy_options(std::string_view str) -> fs::copy_options {
         return fs::copy_options::none;
     }
 }
+static auto touch(fs::path const& path) -> bool {
+    auto const first_touch = not fs::exists(path); 
+    if (first_touch) auto _ = std::fstream{path, std::ios::out};
+    else auto _ = std::fstream{path}; 
+    return first_touch;
+}
 // filesystem
 static auto remove(state_t L) -> int {
     std::error_code err{};
@@ -196,14 +202,30 @@ static auto find_in_environment(state_t L) -> int {
 }
 static auto read_symlink(state_t L) -> int {
     auto ec = std::error_code{};
-    auto path = fs::read_symlink(to_path(L, 1), ec);
+    auto const path = fs::read_symlink(to_path(L, 1), ec);
     error_on_code(L, ec);
     return path_builder_t::push(L, path);
 }
 static auto home_path(state_t L) -> int {
-    auto home = get_home_path();
+    auto const home = get_home_path();
     if (not home) luaL_errorL(L, "%s", home.error().c_str());
     return path_builder_t::push(L, home.value());
+}
+static auto open_file(state_t L) -> int {
+    auto const path = to_path(L, 1);
+    auto& file = file_builder_t::make(L);
+    file.open(path);
+    if (!file.is_open()) luaL_errorL(L, "failed to open file '%s'", path.string().c_str());
+    return 1;
+}
+static auto create_file(state_t L) -> int {
+    auto const path = to_path(L, 1);
+    if (not touch(path)) luaL_errorL(L, "file '%s' already exists", path.string().c_str());
+    file_builder_t::make(L, path);
+    return 1;
+}
+static auto touch_file(state_t L) -> int {
+    return luau::push(L, touch(to_path(L, 1)));
 }
 
 void open_filesystem(state_t L, library_config config) {
@@ -232,6 +254,9 @@ void open_filesystem(state_t L, library_config config) {
         {"find_in_environment", find_in_environment},
         {"read_symlink", read_symlink},
         {"home_path", home_path},
+        {"open_file", open_file},
+        {"create_file", create_file},
+        {"touch_file", touch_file},
         {nullptr, nullptr}
     };
     config.apply(L, filesystem);

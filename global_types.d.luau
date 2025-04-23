@@ -2,8 +2,9 @@ export type copy_options_t = "recursive" | "update existing" | "skip existing" |
 export type file_type_t = "directory" | "symlink" | "file"
 export type path_t = __path | string
 export type path = __path
-export type filewriter = __filewriter
-export type __builtin_filesystem = {
+export type fwriter = __fwriter
+export type writer = __writer
+export type __filesystem = {
     rename: (from: path_t, to: path_t) -> (),
     remove: (path: path_t) -> boolean,
     remove_all: (path: path_t) -> number,
@@ -28,12 +29,15 @@ export type __builtin_filesystem = {
     find_in_environment: (environment_variable: string) -> __path?,
     read_symlink: (symlink: path_t) -> __path,
     home_path: () -> __path,
+    open_file: (path: path_t) -> __file,
+    create_file: (path: path_t) -> __file,
+    touch_file: (path: path_t) -> __file,
 }
-export type __builtin_json = {
+export type __json = {
     parse: <Ty>(json: string) -> Ty,
     to_json: <Ty>(json: Ty) -> string,
 }
-export type __builtin_process = {
+export type __process = {
     system: (command: string) -> number,
     arg_iterator: () -> (() -> string?),
     args: () -> {string},
@@ -42,61 +46,36 @@ export type __builtin_process = {
     bind_to_exit: (fn: ()->(), identifier: string?) -> (),
     unbind_from_exit: (identifier: string) -> boolean,
 }
-export type __builtin_fileio = {
-    write_string: (file_path: path_t, contents: string) -> (),
-    write: (file_path: path_t, contents: buffer) -> (),
-    read_to_end: (file_path: path_t) -> buffer,
-    open_writer: (file: path_t, append_mode: boolean?) -> __filewriter,
-    append_line: (file: path_t, line: string) -> (),
-    append: (file: path_t, txt: string) -> (),
+export type __io = {
+    stderr: __writer,
+    stdout: __writer,
+    file: (path: path_t) -> __file,
 }
-export type __builtin_consoleio = {
-    scanln: () -> string,
-    read: (() -> buffer) & ((buf: buffer) -> ()) & ((count: number) -> buffer),
-    readln: (()->buffer) & ((buf: buffer) -> boolean),
-    err_write: (buf: buffer) -> (),
-    err_writeln: (buf: buffer) -> (),
-    err_print: (txt: string) -> (),
-    err_println: (txt: string) -> (),
-    write: (data: buffer) -> (),
-    writeln: (data: buffer) -> (),
-    print: (txt: string) -> (),
-    println: (txt: string) -> (),
+export type __etc = {
+    proc: __process,
+    fs: __filesystem,
+    json: __json,
+    io: __io,
 }
-export type __builtin = {
-    process: __builtin_process,
-    filesystem: __builtin_filesystem,
-    json: __builtin_json,
-    file: __builtin_fileio,
-    console: __builtin_consoleio,
-}
+export type __fwriter_close_after = (self: writer) -> ()
 
-export type __filewriter_scoped_ref = typeof(setmetatable(
-    {} :: _t_filewriter_scoped_ref,
-    {} :: _mt_filewriter_scoped_ref
-))
-type _mt_filewriter_scoped_ref = {
-    __concat: <T>(self: __filewriter_scoped_ref, other: T) -> __filewriter_scoped_ref,
-}
-type _t_filewriter_scoped_ref = {
-    print: (self: __filewriter_scoped_ref, str: string) -> (),
-    println: (self: __filewriter_scoped_ref, str: string) -> (),
-    write: (self: __filewriter_scoped_ref, buf: buffer) -> (),
-    writeln: (self: __filewriter_scoped_ref, buf: buffer) -> (),
-    is_open: (self: __filewriter_scoped_ref) -> boolean,
-    eof: (self: __filewriter_scoped_ref) -> boolean,
-}
-export type __filewriter_scope_fn = (self: __filewriter_scoped_ref) -> ()
-declare class __filewriter
+declare class __writer
     function print(self, str: string): ()
     function println(self, str: string): ()
     function write(self, buf: buffer): ()
     function writeln(self, buf: buffer): ()
+    function eof(self): boolean
+end
+declare class __fwriter extends __writer
     function is_open(self): boolean
     function close(self): ()
-    function close_after(self, fn: __filewriter_scope_fn): (boolean?, string)
-    function eof(self): boolean
-    function __concat(self, other: any): __filewriter
+    function close_after(self, fn: __fwriter_close_after): (boolean?, string)
+end
+declare class __file extends __writer
+    function writer(self): __writer
+    function is_open(self): boolean
+    function path(self): __path
+    function close(self): ()
 end
 declare class __path
     directory: __path
@@ -117,6 +96,6 @@ declare class __path
     function directory_iterator(self, recursive: boolean?): (() -> __path?)
     function __div(self, other: path_t): __path
 end
-declare builtin: __builtin
+declare etc: __etc
 
 declare collectgarbage: (("collect") -> ()) & (("count") -> number)
