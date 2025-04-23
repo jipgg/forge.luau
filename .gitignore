@@ -2,4 +2,5 @@ bin/
 cmake/
 test_file
 .nvim.lua
+.idea/
 nvimlspsetup.lua

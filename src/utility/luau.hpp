@@ -16,7 +16,8 @@
 // general luau utility
 namespace luau {
 using state_t = lua_State*;
-using state_owner_t = std::unique_ptr<lua_State, decltype(&lua_close)>;
+using state_close_callback_t = std::function<void(state_t)>;
+using state_owner_t = std::unique_ptr<lua_State, state_close_callback_t>;
 using cstr_t = const char*;
 constexpr auto none = 0;
 struct nil_t{};
@@ -39,7 +40,7 @@ struct new_state_options {
     std::span<luaL_Reg> globals = {};
     bool sandbox = false;
 };
-inline auto new_state(new_state_options const& opt = {}) -> state_owner_t {
+inline auto new_state(new_state_options const& opt = {}, state_close_callback_t const& closer = {}) -> state_owner_t {
     auto L = luaL_newstate();
     if (opt.useratom) lua_callbacks(L)->useratom = opt.useratom;
     if (opt.codegen) codegen::create(L);
@@ -53,7 +54,12 @@ inline auto new_state(new_state_options const& opt = {}) -> state_owner_t {
         }
         lua_pop(L, 1);
     }
-    return state_owner_t{L, lua_close};
+    if (closer) {
+        return state_owner_t{L, [cb = std::move(closer)](state_t L) {
+            cb(L);
+            lua_close(L);
+        }};
+    } else return state_owner_t{L, lua_close};
 }
 struct load_options {
     int env = 0;

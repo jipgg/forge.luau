@@ -6,12 +6,12 @@
 #include <filesystem>
 #include <lualib.h>
 #include "utility/compile_time.hpp"
-#include <fstream>
 #include "utility/luau.hpp"
+#include "utility/library_config.hpp"
+#include <fstream>
 #include <cassert>
-using state_t = lua_State*;
-using state_owner_t = std::unique_ptr<lua_State, decltype(&lua_close)>;
-using library_loader_t = std::function<void(state_t L)>;
+using luau::state_t;
+using luau::state_owner_t;
 
 struct args_wrapper {
     std::span<char*> data;
@@ -27,40 +27,22 @@ struct args_wrapper {
     explicit args_wrapper(): data() {}
 };
 
-struct library_config {
-    const char* name = nullptr;
-    bool local = false;
-    void apply(state_t L, library_loader_t loader) {
-        if (local) {
-            lua_newtable(L);
-            loader(L);
-            if (name) lua_setfield(L, -2, name);
-            return;
-        } else if (name) {
-            lua_newtable(L);
-            loader(L);
-            lua_setglobal(L, name);
-            return;
-        } else {
-            lua_pushvalue(L, LUA_GLOBALSINDEX);
-            loader(L);
-            lua_pop(L, 1);
-            return;
-        }
-    }
-    void apply(state_t L, const luaL_Reg* lib) {
-        apply(L, [&lib](auto L) {
-            luaL_register(L, nullptr, lib);
-        });
-    }
+namespace internal {
+struct callbacks {
+    std::function<void(state_t)> on_exit;
 };
+auto get_args() -> args_wrapper const&;
+using callback_t = std::function<void(state_t)>;
+void bind_to_exit(callback_t fn, std::string_view name = "anonymous");
+auto unbind_from_exit(std::string_view name) -> bool;
+}
+
 void open_global(state_t L, const library_config& config = {.name = nullptr});
 void open_filesystem(state_t L, library_config config = {.name = "filesystem"});
 void open_fileio(state_t L, library_config config = {.name = "fileio"});
 void open_consoleio(state_t L, library_config config = {.name = "consoleio"});
 void open_json(state_t L, library_config config = {.name = "json"});
 void open_process(state_t L, library_config config = {.name = "process"});
-auto get_args() -> args_wrapper const&;
 
 auto setup_state() -> state_owner_t;
 auto load_script(state_t L, const std::filesystem::path& path) -> std::expected<state_t, std::string>;

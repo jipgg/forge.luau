@@ -38,6 +38,9 @@ export type __builtin_process = {
     arg_iterator: () -> (() -> string?),
     args: () -> {string},
     sleep_for: (seconds: number) -> (), 
+    exit: (exit_code: number?) -> never,
+    bind_to_exit: (fn: ()->(), identifier: string?) -> (),
+    unbind_from_exit: (identifier: string) -> boolean,
 }
 export type __builtin_fileio = {
     write_string: (file_path: path_t, contents: string) -> (),
@@ -48,17 +51,24 @@ export type __builtin_fileio = {
     append: (file: path_t, txt: string) -> (),
 }
 export type __builtin_consoleio = {
-    scan: () -> string,
+    scanln: () -> string,
     read: (() -> buffer) & ((buf: buffer) -> ()) & ((count: number) -> buffer),
-    err_write: (txt: string) -> (),
-    write: (txt: string) -> (),
+    readln: (()->buffer) & ((buf: buffer) -> boolean),
+    err_write: (buf: buffer) -> (),
+    err_writeln: (buf: buffer) -> (),
+    err_print: (txt: string) -> (),
+    err_println: (txt: string) -> (),
+    write: (data: buffer) -> (),
+    writeln: (data: buffer) -> (),
+    print: (txt: string) -> (),
+    println: (txt: string) -> (),
 }
 export type __builtin = {
-    proc: __builtin_process,
-    fs: __builtin_filesystem,
+    process: __builtin_process,
+    filesystem: __builtin_filesystem,
     json: __builtin_json,
-    fio: __builtin_fileio,
-    cio: __builtin_consoleio,
+    file: __builtin_fileio,
+    console: __builtin_consoleio,
 }
 
 export type __filewriter_scoped_ref = typeof(setmetatable(
@@ -69,15 +79,19 @@ type _mt_filewriter_scoped_ref = {
     __concat: <T>(self: __filewriter_scoped_ref, other: T) -> __filewriter_scoped_ref,
 }
 type _t_filewriter_scoped_ref = {
-    write_string: (self: __filewriter_scoped_ref, str: string) -> (),
+    print: (self: __filewriter_scoped_ref, str: string) -> (),
+    println: (self: __filewriter_scoped_ref, str: string) -> (),
     write: (self: __filewriter_scoped_ref, buf: buffer) -> (),
+    writeln: (self: __filewriter_scoped_ref, buf: buffer) -> (),
     is_open: (self: __filewriter_scoped_ref) -> boolean,
     eof: (self: __filewriter_scoped_ref) -> boolean,
 }
 export type __filewriter_scope_fn = (self: __filewriter_scoped_ref) -> ()
 declare class __filewriter
-    function write_string(self, str: string): ()
+    function print(self, str: string): ()
+    function println(self, str: string): ()
     function write(self, buf: buffer): ()
+    function writeln(self, buf: buffer): ()
     function is_open(self): boolean
     function close(self): ()
     function close_after(self, fn: __filewriter_scope_fn): (boolean?, string)
@@ -103,6 +117,6 @@ declare class __path
     function directory_iterator(self, recursive: boolean?): (() -> __path?)
     function __div(self, other: path_t): __path
 end
-declare blt: __builtin
+declare builtin: __builtin
 
 declare collectgarbage: (("collect") -> ()) & (("count") -> number)

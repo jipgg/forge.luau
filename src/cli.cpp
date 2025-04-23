@@ -42,9 +42,8 @@ auto main(int argc, char** argv) -> int {
             run_script(L, script);
         }
     }
-
     return 0;
 }
-auto get_args() -> args_wrapper const& {
+auto internal::get_args() -> args_wrapper const& {
     return args;
 }

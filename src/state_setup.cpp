@@ -8,14 +8,19 @@
 #include <expected>
 #include "common.hpp"
 #include "utility/compile_time.hpp"
-#include "utility/luau.hpp"
+#include <unordered_map>
 #include <print>
+#include <vector>
+#include <functional>
+#include "utility/luau.hpp"
 namespace fs = std::filesystem;
 namespace rgs = std::ranges;
 using cstr_t = const char*;
 using std::string;
 
 static bool codegen = true;
+using exit_callback_t = std::function<void(state_t)>;
+static std::unordered_multimap<std::string, exit_callback_t> exit_callbacks{};
 
 static auto compile_options() -> lua_CompileOptions {
     static cstr_t userdata_types[] = {
@@ -181,6 +186,28 @@ static auto user_atom(const char* str, size_t len) -> int16_t {
     return static_cast<int16_t>(found->value);
 }
 
+void internal::bind_to_exit(callback_t fn, std::string_view name) {
+    auto key = std::string{name};
+    exit_callbacks.insert({key, fn});
+}
+auto internal::unbind_from_exit(std::string_view name) -> bool {
+    auto const key = std::string{name};
+    auto const unbind = exit_callbacks.contains(key);
+    if (unbind) {
+        exit_callbacks.erase(key);
+    }
+    return unbind;
+}
+
+static void state_closer(state_t L) {
+    if (not exit_callbacks.empty()) {
+        for (auto& [_, fn] : exit_callbacks) {
+            fn(L);
+        }
+    }
+    exit_callbacks.clear();
+}
+
 auto setup_state() -> state_owner_t {
     auto globals = std::to_array<luaL_Reg>({
         {"loadstring", loadstring},
@@ -190,17 +217,17 @@ auto setup_state() -> state_owner_t {
     auto state = luau::new_state({
         .useratom = user_atom,
         .globals = globals,
-    });
+    }, state_closer);
     auto L = state.get();
     register_path(L);
     register_filewriter(L);
     lua_newtable(L);
-    open_filesystem(L, {.name = "fs", .local = true});
+    open_filesystem(L, {.name = "filesystem", .local = true});
     open_json(L, {.name = "json", .local = true});
-    open_fileio(L, {.name = "fio", .local = true});
-    open_consoleio(L, {.name = "cio", .local = true});
-    open_process(L, {.name = "proc", .local = true});
-    lua_setglobal(L, "blt");
+    open_fileio(L, {.name = "file", .local = true});
+    open_consoleio(L, {.name = "console", .local = true});
+    open_process(L, {.name = "process", .local = true});
+    lua_setglobal(L, "builtin");
     luaL_sandbox(L);
     return state;
 }
