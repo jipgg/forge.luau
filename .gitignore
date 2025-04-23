@@ -1,3 +1,5 @@
 bin/
 cmake/
 test_file
+.nvim.lua
+nvimlspsetup.lua
