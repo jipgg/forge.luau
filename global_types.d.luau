@@ -117,6 +117,6 @@ declare class __path
     function directory_iterator(self, recursive: boolean?): (() -> __path?)
     function __div(self, other: path_t): __path
 end
-declare builtin: __builtin
+declare lib: __builtin
 
 declare collectgarbage: (("collect") -> ()) & (("count") -> number)

@@ -10,6 +10,7 @@
 #include <ShlObj.h>
 #endif
 namespace fs = std::filesystem;
+using path_util = type::path::util;
 
 // util
 static void error_on_code(state_t L, const std::error_code& ec) {
@@ -91,7 +92,7 @@ static auto remove_all(state_t L) -> int {
     return 1;
 } 
 static auto current_path(state_t L) -> int {
-    return path_builder_t::push(L, fs::current_path());
+    return path_util::push(L, fs::current_path());
 }
 static auto exists(state_t L) -> int {
     return luau::push(L, fs::exists(to_path(L, 1)));
@@ -107,7 +108,7 @@ static auto temp_directory_path(state_t L) -> int {
     std::error_code ec{};
     auto path = fs::temp_directory_path(ec);
     if (ec) luaL_errorL(L, "%s", ec.message().c_str());
-    return path_builder_t::push(L, path);
+    return path_util::push(L, path);
 }
 static auto equivalent(state_t L) -> int {
     std::error_code ec{};
@@ -119,19 +120,19 @@ static auto weakly_canonical(state_t L) -> int {
     std::error_code ec{};
     auto path = fs::weakly_canonical(to_path(L, 1), ec);
     error_on_code(L, ec);
-    return path_builder_t::push(L, path);
+    return path_util::push(L, path);
 }
 static auto canonical(state_t L) -> int {
     std::error_code ec{};
     auto path = fs::canonical(to_path(L, 1), ec);
     error_on_code(L, ec);
-    return path_builder_t::push(L, path);
+    return path_util::push(L, path);
 }
 static auto absolute(state_t L) -> int {
     std::error_code ec{};
     auto path = fs::absolute(to_path(L, 1), ec);
     error_on_code(L, ec);
-    return path_builder_t::push(L, path);
+    return path_util::push(L, path);
 }
 static auto copy(state_t L) -> int {
     std::error_code ec{};
@@ -186,27 +187,28 @@ static auto create_directories(state_t L) -> int {
     error_on_code(L, ec);
     return luau::push(L, result);
 }
-static auto path(state_t L) -> int {
-    return path_builder_t::push(L, luaL_checkstring(L, 1));
+static auto path_create(state_t L) -> int {
+    return path_util::push(L, luaL_checkstring(L, 1));
 }
 static auto find_in_environment(state_t L) -> int {
     auto env = std::getenv(luaL_checkstring(L, 1));
     if (not env) return luau::push(L, luau::nil);
-    else return path_builder_t::push(L, env);
+    else return path_util::push(L, env);
 }
 static auto read_symlink(state_t L) -> int {
     auto ec = std::error_code{};
     auto path = fs::read_symlink(to_path(L, 1), ec);
     error_on_code(L, ec);
-    return path_builder_t::push(L, path);
+    return path_util::push(L, path);
 }
 static auto home_path(state_t L) -> int {
     auto home = get_home_path();
     if (not home) luaL_errorL(L, "%s", home.error().c_str());
-    return path_builder_t::push(L, home.value());
+    return path_util::push(L, home.value());
 }
 
-void open_filesystem(state_t L, library_config config) {
+template<>
+auto lib::filesystem::open(state_t L, library_config config) -> void {
     const luaL_Reg filesystem[] = {
         {"remove", remove},
         {"remove_all", remove_all},
@@ -228,7 +230,7 @@ void open_filesystem(state_t L, library_config config) {
         {"create_symlink", create_symlink},
         {"create_directory_symlink", create_directory_symlink},
         {"create_directories", create_directories},
-        {"path", path},
+        {"path", path_create},
         {"find_in_environment", find_in_environment},
         {"read_symlink", read_symlink},
         {"home_path", home_path},

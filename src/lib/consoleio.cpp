@@ -37,7 +37,8 @@ static auto err_write(state_t L) -> int {
     return luau::none;
 }
 
-void open_consoleio(state_t L, library_config config) {
+template<>
+void lib::consoleio::open(state_t L, library_config config) {
     const luaL_Reg consoleio[] = {
         {"write", write},
         {"read", read},

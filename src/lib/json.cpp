@@ -123,7 +123,8 @@ static auto parse(state_t L) -> int {
 static auto to_json(state_t L) -> int {
     return luau::push(L, table_to_json(L, 1).dump());
 }
-void open_json(state_t L, library_config config) {
+template<>
+void lib::json::open(state_t L, library_config config) {
     const luaL_Reg json[] = {
         {"parse", parse},
         {"to_json", to_json},

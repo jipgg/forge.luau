@@ -13,6 +13,7 @@
 #include <vector>
 #include <functional>
 #include "utility/luau.hpp"
+#include "type/method.hpp"
 namespace fs = std::filesystem;
 namespace rgs = std::ranges;
 using cstr_t = const char*;
@@ -24,8 +25,8 @@ static std::unordered_multimap<std::string, exit_callback_t> exit_callbacks{};
 
 static auto compile_options() -> lua_CompileOptions {
     static cstr_t userdata_types[] = {
-        path_builder_t::name,
-        filewriter_builder_t::name,
+        type::path::name(),
+        type::filewriter::name(),
         nullptr
     };
     return {
@@ -158,7 +159,16 @@ static int collectgarbage(lua_State* L) {
     }
     luaL_error(L, "collectgarbage must be called with 'count' or 'collect'");
 }
-auto load_script(state_t L, fs::path const& path) -> std::expected<state_t, std::string> {
+static auto user_atom(const char* str, size_t len) -> int16_t {
+    std::string_view namecall{str, len};
+    static constexpr std::array info = compile_time::to_array<method>();
+    auto found = rgs::find_if(info, [&namecall](auto const& e) {
+        return e.name == namecall;
+    });
+    if (found == rgs::end(info)) return -1;
+    return static_cast<int16_t>(found->value);
+}
+auto state::load_script(state_t L, fs::path const& path) -> std::expected<state_t, std::string> {
     auto main_thread = lua_mainthread(L);
     auto script_thread = lua_newthread(main_thread);
     std::ifstream file{path};
@@ -176,39 +186,7 @@ auto load_script(state_t L, fs::path const& path) -> std::expected<state_t, std:
         return std::format("Loading error: {}", err);
     });
 }
-static auto user_atom(const char* str, size_t len) -> int16_t {
-    std::string_view namecall{str, len};
-    static constexpr std::array info = compile_time::to_array<method_name>();
-    auto found = rgs::find_if(info, [&namecall](auto const& e) {
-        return e.name == namecall;
-    });
-    if (found == rgs::end(info)) return -1;
-    return static_cast<int16_t>(found->value);
-}
-
-void internal::bind_to_exit(callback_t fn, std::string_view name) {
-    auto key = std::string{name};
-    exit_callbacks.insert({key, fn});
-}
-auto internal::unbind_from_exit(std::string_view name) -> bool {
-    auto const key = std::string{name};
-    auto const unbind = exit_callbacks.contains(key);
-    if (unbind) {
-        exit_callbacks.erase(key);
-    }
-    return unbind;
-}
-
-static void state_closer(state_t L) {
-    if (not exit_callbacks.empty()) {
-        for (auto& [_, fn] : exit_callbacks) {
-            fn(L);
-        }
-    }
-    exit_callbacks.clear();
-}
-
-auto setup_state() -> state_owner_t {
+auto state::init(const char* name) -> state_owner_t {
     auto globals = std::to_array<luaL_Reg>({
         {"loadstring", loadstring},
         {"require", require},
@@ -217,17 +195,17 @@ auto setup_state() -> state_owner_t {
     auto state = luau::new_state({
         .useratom = user_atom,
         .globals = globals,
-    }, state_closer);
+    });
     auto L = state.get();
-    register_path(L);
-    register_filewriter(L);
+    type::path::init(L);
+    type::filewriter::init(L);
     lua_newtable(L);
-    open_filesystem(L, {.name = "filesystem", .local = true});
-    open_json(L, {.name = "json", .local = true});
-    open_fileio(L, {.name = "file", .local = true});
-    open_consoleio(L, {.name = "console", .local = true});
-    open_process(L, {.name = "process", .local = true});
-    lua_setglobal(L, "builtin");
+    lib::filesystem::open(L, {.name = "filesystem", .local = true});
+    lib::json::open(L, {.name = "json", .local = true});
+    lib::fileio::open(L, {.name = "file", .local = true});
+    lib::consoleio::open(L, {.name = "console", .local = true});
+    lib::process::open(L, {.name = "process", .local = true});
+    lua_setglobal(L, name);
     luaL_sandbox(L);
     return state;
 }

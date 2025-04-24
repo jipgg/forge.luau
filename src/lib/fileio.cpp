@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 namespace fs = std::filesystem;
+using fwriter_utl = type::filewriter::util;
 
 template<class Ty>
 concept has_is_open = requires (Ty& v) {
@@ -54,9 +55,9 @@ static auto open_writer(state_t L) -> int {
     auto append_mode = luaL_optboolean(L, 2, false);
     auto file = std::ofstream{};
     if (append_mode) {
-        check_open(L, path, filewriter_builder_t::make(L, path, std::ios::app));
+        check_open(L, path, fwriter_utl::make(L, path, std::ios::app));
     } else {
-        check_open(L, path, filewriter_builder_t::make(L, path));
+        check_open(L, path, fwriter_utl::make(L, path));
     }
     return 1;
 }
@@ -74,7 +75,8 @@ static auto append_line(state_t L) -> int {
     file << luaL_checkstring(L, 2) << std::endl;
     return luau::none;
 }
-void open_fileio(state_t L, library_config config) {
+template<>
+void lib::fileio::open(state_t L, library_config config) {
     const luaL_Reg fileio[] = {
         {"write_string", write_string},
         {"write", write},

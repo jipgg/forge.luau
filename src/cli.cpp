@@ -10,7 +10,7 @@ using namespace std::string_view_literals;
 static args_wrapper args;
 
 static auto run_script(state_t L, std::string_view script) -> void {
-    auto expected = load_script(L, script);
+    auto expected = state::load_script(L, script);
     if (!expected) {
         std::println("\033[35mError: {}\033[0m", expected.error());
     }
@@ -22,7 +22,7 @@ static auto run_script(state_t L, std::string_view script) -> void {
 
 auto main(int argc, char** argv) -> int {
     args = args_wrapper{argc, argv};
-    auto state = setup_state();
+    auto state = state::init();
     auto L = state.get();
     auto scripts = vws::filter([](std::string_view e) {
         return e.ends_with(".luau");

@@ -1,0 +1,13 @@
+CompileFlags:
+  Add:
+    - "-I.."
+    - "-I../../luau/VM/include"
+    - "-I../../luau/Compiler/include"
+    - "-I../../luau/CodeGen/include"
+    - "-I../../luau/CLI/include"
+    - "-I../../luau/Config/include"
+    - "-I../../luau/Common/include"
+    - "-I../../luau/Ast/include"
+
+    - "-I../../extern/httplib"
+    - "-I../../extern/nlohmann_json/include"
