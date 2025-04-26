@@ -38,7 +38,7 @@ static auto sleep_for(state_t L) -> int {
     return luau::none;
 }
 template<>
-void lib::process::open(state_t L, library_config config) {
+void process::open(state_t L, library_config config) {
     luaL_Reg const process[] = {
         {"system", system},
         {"args", args},

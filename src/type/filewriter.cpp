@@ -1,11 +1,10 @@
 #include "common.hpp"
 #include "utility/luau.hpp"
 #include "method.hpp"
-using util = type::filewriter::util;
+using util = filewriter::util;
 template<>
 const char* util::name{"filewriter"};
 
-namespace type {
 template<>
 auto filewriter::name() -> const char* {return util::name;}
 template<>
@@ -63,5 +62,4 @@ void filewriter::init(state_t L) {
         {nullptr, nullptr}
     };
     util::register_type(L, metatable);
-}
 }

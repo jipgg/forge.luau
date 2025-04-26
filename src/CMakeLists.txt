@@ -8,6 +8,9 @@ add_executable(executable
     lib/process.cpp
     type/filewriter.cpp
     type/path.cpp
+    ../extern/luau/CLI/src/ReplRequirer.cpp
+    ../extern/luau/CLI/src/RequirerUtils.cpp
+    ../extern/luau/CLI/src/Coverage.cpp
 )
 
 target_link_libraries(executable PRIVATE
@@ -17,6 +20,9 @@ target_link_libraries(executable PRIVATE
     Luau.Config
     Luau.CodeGen
     Luau.CLI.lib
+    isocline
+    Luau.Require
+    Luau.RequireNavigator
     httplib
     nlohmann_json::nlohmann_json
 )

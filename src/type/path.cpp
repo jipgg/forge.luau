@@ -4,14 +4,13 @@
 #include "utility/luau.hpp"
 #include "method.hpp"
 namespace fs = std::filesystem;
-using util = type::path::util;
+using util = path::util;
 
 template<>
 const char* util::name{"path"};
-auto to_path(state_t L, int idx) -> type::path_t {
+auto to_path(state_t L, int idx) -> path_t {
     return util::get_or(L, idx, [&]{return luaL_checkstring(L, idx);});
 }
-namespace type {
 template<>
 auto path::name() -> const char* {
     return util::name;
@@ -71,7 +70,7 @@ static auto mt_div(state_t L) -> int {
 }
 
 template<>
-auto type::path::init(state_t L) -> void {
+auto path::init(state_t L) -> void {
     const luaL_Reg metatable[] = {
         {"__namecall", mt_namecall},
         {"__tostring", mt_tostring},
@@ -80,5 +79,3 @@ auto type::path::init(state_t L) -> void {
     };
     util::register_type(L, metatable);
 }
-}
-
