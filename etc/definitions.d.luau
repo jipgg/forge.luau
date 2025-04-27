@@ -84,19 +84,26 @@ end
 declare class __path
     function string(self): string
     function generic_string(self): string
-    function extension(self): string
+    function extension(self): path
     function has_extension(self): boolean
     function replace_extension(self, replacement: string): path
-    function parent_path(self): path
+    function exist(self): boolean
+    function parent(self): path
+    function child(self, name: path_t): path
     function is_absolute(self): boolean
     function is_relative(self): boolean
-    function filename(self): string
+    function filename(self): path
     function has_filename(self): boolean
     function replace_filename(self, replacement: string): path
+    function remove_filename(self): path
+    function remove_extension(self): path
     function is_directory(self): boolean
     function is_file(self): boolean
     function is_symlink(self): boolean
-    function directory_iterator(self, recursive: boolean?): (() -> path?)
+    function each_descendant(self): (() -> path?)
+    function each_child(self): (() -> path?)
+    function descendants(self): {path}
+    function children(self): {path}
     function __div(self, other: path_t): path
 end
 declare plus: plus

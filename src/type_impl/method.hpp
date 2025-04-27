@@ -45,6 +45,12 @@ enum class method {
     println,
     ln,
     endl,
+    parent,
+    child,
+    descendants,
+    each_child,
+    each_descendant,
+    remove_extension,
     COMPILE_TIME_ENUM_SENTINEL
 };
 #endif

@@ -208,11 +208,12 @@ static auto home_path(state_t L) -> int {
 template <class Iterator>
 static auto directory_iterator_closure(state_t L) -> int {
     auto& it = luau::to_userdata<Iterator>(L, lua_upvalueindex(1));
+    auto& entry = path::util::get(L, lua_upvalueindex(2));
     const Iterator end{};
     if (it != end) {
-        const std::filesystem::directory_entry& entry = *it;
-        auto path = entry.path();
-        path::util::push(L, path);
+        const std::filesystem::directory_entry& e = *it;
+        entry = e.path();
+        lua_pushvalue(L, lua_upvalueindex(2));
         ++it;
         return 1;
     }
@@ -225,18 +226,20 @@ auto push_directory_iterator(state_t L, path_t const& directory, bool recursive)
     }
     if (not recursive) {
         luau::make_userdata<fs::directory_iterator>(L, directory);
+        path::util::make(L);
         lua_pushcclosure(L,
             directory_iterator_closure<fs::directory_iterator>,
             "directory_iterator",
-            1
+            2
         );
     } else {
         luau::make_userdata<fs::recursive_directory_iterator>(L, directory);
+        path::util::make(L);
         lua_pushcclosure(
             L,
             directory_iterator_closure<fs::recursive_directory_iterator>,
             "recursive_directory_iterator",
-            1
+            2
         );
     }
     return 1;

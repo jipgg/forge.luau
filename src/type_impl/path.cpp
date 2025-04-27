@@ -18,8 +18,10 @@ auto path::name() -> const char* {
 template<>
 auto path::namecall_if(state_t L, type& self, int atom)-> std::optional<int> {
     switch (static_cast<method>(atom)) {
-        case method::directory_iterator:
-            return push_directory_iterator(L, self, luaL_optboolean(L, 2, false));
+        case method::each_child:
+            return push_directory_iterator(L, self, false);
+        case method::each_descendant:
+            return push_directory_iterator(L, self, true);
         case method::is_directory:
             return luau::push(L, fs::is_directory(self));
         case method::is_file:
@@ -29,27 +31,49 @@ auto path::namecall_if(state_t L, type& self, int atom)-> std::optional<int> {
         case method::string:
             return luau::push(L, self.string());
         case method::extension:
-            return luau::push(L, self.extension().string());
+            return util::push(L, self.extension());
         case method::has_extension:
             return luau::push(L, self.has_extension());
-        case method::replace_extension:
-            return util::push(L, self.replace_extension(luaL_checkstring(L, 2)));
-        case method::parent_path:
+        case method::parent:
             return util::push(L, self.parent_path());
+        case method::child:
+            return util::push(L, self / to_path(L, 2));
         case method::is_absolute:
             return luau::push(L, self.is_absolute());
         case method::is_relative:
             return luau::push(L, self.is_relative());
         case method::filename:
-            return luau::push(L, self.filename().string());
-        case method::has_filename:
-            return luau::push(L, self.has_filename());
-        case method::replace_filename:
-            return util::push(L, self.replace_filename(luaL_checkstring(L, 2)));
-        case method::remove_filename:
-            return util::push(L, self.remove_filename());
+            return util::push(L, self.filename());
         case method::generic_string:
             return luau::push(L, self.generic_string());
+        case method::has_filename:
+            return luau::push(L, self.has_filename());
+        case method::replace_extension:
+            return util::push(L, type(self).replace_extension(to_path(L, 2)));
+        case method::replace_filename:
+            return util::push(L, type(self).replace_filename(luaL_checkstring(L, 2)));
+        case method::remove_filename:
+            return util::push(L, type(self).remove_filename());
+        case method::remove_extension:
+            return util::push(L, type(self).replace_extension());
+        case method::children: {
+            lua_newtable(L);
+            int n{1};
+            for (auto const& entry : fs::directory_iterator(self)) {
+                util::make(L, entry.path());
+                lua_rawseti(L, -2, n++);
+            }
+            return 1;
+        }
+        case method::descendants: {
+            lua_newtable(L);
+            int n{1};
+            for (auto const& entry : fs::recursive_directory_iterator(self)) {
+                util::make(L, entry.path());
+                lua_rawseti(L, -2, n++);
+            }
+            return 1;
+        }
         default: return std::nullopt;
     }
 };
