@@ -4,7 +4,7 @@
 #include <thread>
 using sec_t = std::chrono::duration<double, std::ratio<1>>;
 
-using arg_iterator_t = decltype(internal::get_args().data.begin());
+using arg_iterator_t = decltype(internal::get_args().span().begin());
 
 static auto system(state_t L) -> int {
     int exit_code = ::system(luaL_checkstring(L, 1));
@@ -12,14 +12,14 @@ static auto system(state_t L) -> int {
 }
 static auto arg_iterator_closure(state_t L) -> int {
     auto& it = luau::to_userdata<arg_iterator_t>(L, lua_upvalueindex(1));
-    if (it == internal::get_args().data.end()) return luau::none;
+    if (it == internal::get_args().span().end()) return luau::none;
     lua_pushstring(L, *it);
     ++it;
     return 1;
 }
 static auto args(state_t L) -> int {
     auto const& wrapper = internal::get_args();
-    lua_createtable(L, wrapper.data.size(), 0);
+    lua_createtable(L, wrapper.span().size(), 0);
     int i{1};
     for (auto arg : wrapper.view()) {
         lua_pushlstring(L, arg.data(), arg.size());
@@ -28,8 +28,8 @@ static auto args(state_t L) -> int {
     return 1;
 }
 static auto arg_iterator(state_t L) -> int {
-    auto args = internal::get_args().data.begin();
-    luau::make_userdata<arg_iterator_t>(L, internal::get_args().data.begin());
+    auto args = internal::get_args().span().begin();
+    luau::make_userdata<arg_iterator_t>(L, internal::get_args().span().begin());
     lua_pushcclosure(L, arg_iterator_closure, "arg_iterator", 1);
     return 1;
 }

@@ -42,6 +42,9 @@ enum class method {
     is_file,
     is_symlink,
     directory_iterator,
+    println,
+    ln,
+    endl,
     COMPILE_TIME_ENUM_SENTINEL
 };
 #endif

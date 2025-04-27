@@ -3,7 +3,7 @@ export type file_type_t = "directory" | "symlink" | "file"
 export type path_t = __path | string
 export type path = __path
 export type filewriter = __filewriter
-export type __builtin_filesystem = {
+export type __filesystem = {
     rename: (from: path_t, to: path_t) -> (),
     remove: (path: path_t) -> boolean,
     remove_all: (path: path_t) -> number,
@@ -29,20 +29,21 @@ export type __builtin_filesystem = {
     read_symlink: (symlink: path_t) -> __path,
     home_path: () -> __path,
 }
-export type __builtin_json = {
+export type __json = {
     parse: <Ty>(json: string) -> Ty,
     to_json: <Ty>(json: Ty) -> string,
 }
-export type __builtin_process = {
+export type __process = {
     system: (command: string) -> number,
     arg_iterator: () -> (() -> string?),
     args: () -> {string},
     sleep_for: (seconds: number) -> (), 
-    exit: (exit_code: number?) -> never,
-    bind_to_exit: (fn: ()->(), identifier: string?) -> (),
-    unbind_from_exit: (identifier: string) -> boolean,
 }
-export type __builtin_fileio = {
+export type __garbage_collector = {
+    count: () -> number,
+    collect: () -> (),
+}
+export type __fileio = {
     write_string: (file_path: path_t, contents: string) -> (),
     write: (file_path: path_t, contents: buffer) -> (),
     read_to_end: (file_path: path_t) -> buffer,
@@ -50,7 +51,7 @@ export type __builtin_fileio = {
     append_line: (file: path_t, line: string) -> (),
     append: (file: path_t, txt: string) -> (),
 }
-export type __builtin_consoleio = {
+export type __consoleio = {
     scanln: () -> string,
     read: (() -> buffer) & ((buf: buffer) -> ()) & ((count: number) -> buffer),
     readln: (()->buffer) & ((buf: buffer) -> boolean),
@@ -63,12 +64,15 @@ export type __builtin_consoleio = {
     print: (txt: string) -> (),
     println: (txt: string) -> (),
 }
-export type __builtin = {
-    process: __builtin_process,
-    filesystem: __builtin_filesystem,
-    json: __builtin_json,
-    file: __builtin_fileio,
-    console: __builtin_consoleio,
+export type __plus = {
+    process: __process,
+    filesystem: __filesystem,
+    json: __json,
+    fileio: __fileio,
+    consoleio: __consoleio,
+    garbage: __garbage_collector,
+    stdout: plus_writer,
+    stderr: plus_writer,
 }
 
 export type __filewriter_scoped_ref = typeof(setmetatable(
@@ -87,15 +91,21 @@ type _t_filewriter_scoped_ref = {
     eof: (self: __filewriter_scoped_ref) -> boolean,
 }
 export type __filewriter_scope_fn = (self: __filewriter_scoped_ref) -> ()
-declare class __filewriter
-    function print(self, str: string): ()
-    function println(self, str: string): ()
-    function write(self, buf: buffer): ()
-    function writeln(self, buf: buffer): ()
+declare class plus_writer
+    function print(self, str: string): plus_writer
+    function println(self, str: string): plus_writer
+    function write(self, buf: buffer): plus_writer
+    function writeln(self, buf: buffer): plus_writer
+    function ln(self): plus_writer
+    function endl(self): plus_writer
+    function flush(self): plus_writer
+    function eof(self): boolean
+    function __concat(self, other: any): plus_writer
+end
+declare class __filewriter extends plus_writer
     function is_open(self): boolean
     function close(self): ()
     function close_after(self, fn: __filewriter_scope_fn): (boolean?, string)
-    function eof(self): boolean
     function __concat(self, other: any): __filewriter
 end
 declare class __path
@@ -117,6 +127,6 @@ declare class __path
     function directory_iterator(self, recursive: boolean?): (() -> __path?)
     function __div(self, other: path_t): __path
 end
-declare lib: __builtin
+declare plus: __plus
 
 declare collectgarbage: (("collect") -> ()) & (("count") -> number)

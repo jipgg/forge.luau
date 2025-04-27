@@ -1,13 +1,16 @@
 add_executable(executable
     cli.cpp
     state.cpp
-    lib/filesystem.cpp
-    lib/json.cpp
-    lib/fileio.cpp
-    lib/consoleio.cpp
-    lib/process.cpp
-    type/filewriter.cpp
-    type/path.cpp
+    lib_impl/require.cpp
+    lib_impl/filesystem.cpp
+    lib_impl/json.cpp
+    lib_impl/fileio.cpp
+    lib_impl/consoleio.cpp
+    lib_impl/process.cpp
+    lib_impl/garbage.cpp
+    type_impl/filewriter.cpp
+    type_impl/writer.cpp
+    type_impl/path.cpp
     ../extern/luau/CLI/src/ReplRequirer.cpp
     ../extern/luau/CLI/src/RequirerUtils.cpp
     ../extern/luau/CLI/src/Coverage.cpp

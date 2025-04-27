@@ -1,6 +1,5 @@
 #ifndef COMMON_HPP
 #define COMMON_HPP
-
 #include <memory>
 #include <expected>
 #include <filesystem>
@@ -12,6 +11,7 @@
 #include <fstream>
 #include <expected>
 #include <cassert>
+#include <variant>
 using luau::state_t;
 using luau::state_owner_t;
 
@@ -23,10 +23,29 @@ struct type_impl {
     static auto name() -> const char*;
     static auto namecall_if(state_t L, Ty& self, int atom) -> std::optional<int>;
 };
+template <class Ty>
+concept has_get_method = requires (Ty v) {v.get();};
+template <class Ty, has_get_method Owning = std::shared_ptr<Ty>>
+struct interface {
+    using type = Ty;
+    using pointer = Ty*;
+    using reference = Ty&;
+    std::variant<pointer, Owning> ptr;
+    interface(pointer ptr): ptr(ptr) {}
+    interface(Owning ptr): ptr(std::move(ptr)) {}
+    constexpr auto get() -> pointer {
+        if (auto p = std::get_if<Ty*>(&ptr)) return *p;
+        else return std::get<Owning>(ptr).get();
+    }
+    constexpr auto operator->() -> pointer {return get();}
+    constexpr auto operator*() -> reference {return *get();}
+};
 using path = type_impl<std::filesystem::path>;
 using path_t = path::type;
 using filewriter = type_impl<std::ofstream>;
 using filewriter_t = filewriter::type;
+using writer = type_impl<interface<std::ostream>>;
+using writer_t = writer::type;
 template<class Ty>
 struct lib_impl {
     static void open(state_t L, library_config config);
@@ -36,10 +55,20 @@ using fileio = lib_impl<struct fileio_tag>;
 using consoleio = lib_impl<struct consoleio_tag>;
 using process = lib_impl<struct process_tag>;
 using json = lib_impl<struct json_tag>;
+using require = lib_impl<struct require_tag>;
+using garbage = lib_impl<struct garbage_tag>;
 auto push_directory_iterator(state_t L, path_t const& directory, bool recursive) -> int;
 auto to_path(state_t L, int idx) -> path_t;
 auto init_state(const char* libname = "lib") -> state_owner_t;
 auto load_script(state_t L, const std::filesystem::path& path) -> std::expected<state_t, std::string>;
+void open_require(state_t L);
+struct require_context {
+    std::filesystem::path absolute_path;
+    std::filesystem::path path;
+    std::string suffix;
+    bool codegen_enabled;
+};
+auto current_require_context(state_t L) -> require_context;
 
 enum class read_file_error {
     not_a_file,
@@ -88,17 +117,20 @@ static auto compile_options() -> Ty {
 }
 
 struct args_wrapper {
-    std::span<char*> data;
+    int argc;
+    char** argv;
+    auto span() const -> std::span<char*> {
+        return {argv, argv + argc};
+    }
     auto view() const -> decltype(auto) {
-        return std::views::transform(data, [](auto v) -> std::string_view {return v;});
+        return std::views::transform(span(), [](auto v) -> std::string_view {return v;});
     }
     auto operator[](size_t idx) const -> std::optional<std::string_view> {
-        if (idx >= data.size()) return std::nullopt;
-        return data[idx];
+        if (idx >= argc) return std::nullopt;
+        return argv[idx];
     }
-    args_wrapper(int argc, char** argv): data(argv, argv + argc) {}
-    explicit args_wrapper(std::span<char*> data): data(data) {}
-    explicit args_wrapper(): data() {}
+    args_wrapper(int argc, char** argv): argc(argc), argv(argv) {}
+    explicit args_wrapper() = default;
 };
 namespace internal {
     auto get_args() -> args_wrapper const&;

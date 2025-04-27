@@ -6,6 +6,7 @@
 #include <fstream>
 #include <filesystem>
 #include <expected>
+#include <iostream>
 #include "common.hpp"
 #include "utility/compile_time.hpp"
 #include "Luau/ReplRequirer.h"
@@ -15,15 +16,12 @@
 #include <vector>
 #include <functional>
 #include "utility/luau.hpp"
-#include "type/method.hpp"
+#include "type_impl/method.hpp"
 namespace fs = std::filesystem;
 namespace rgs = std::ranges;
 using cstr_t = const char*;
 using std::string;
 
-static bool codegen = true;
-using exit_callback_t = std::function<void(state_t)>;
-static std::unordered_multimap<std::string, exit_callback_t> exit_callbacks{};
 static auto loadstring(state_t L) -> int {
     auto l = size_t{};
     auto s = luaL_checklstring(L, 1, &l);
@@ -77,39 +75,6 @@ auto load_script(state_t L, fs::path const& path) -> std::expected<state_t, std:
         return std::format("Loading error: {}", err);
     });
 }
-
-static void* createCliRequireContext(lua_State* L)
-{
-    void* ctx = lua_newuserdatadtor(
-        L,
-        sizeof(ReplRequirer),
-        [](void* ptr)
-        {
-            static_cast<ReplRequirer*>(ptr)->~ReplRequirer();
-        }
-    );
-
-    if (!ctx)
-        luaL_error(L, "unable to allocate ReplRequirer");
-
-    ctx = new (ctx) ReplRequirer{
-        compile_options<Luau::CompileOptions>,
-        coverageActive,
-        []()
-        {
-            return codegen;
-        },
-        coverageTrack,
-    };
-
-    // Store ReplRequirer in the registry to keep it alive for the lifetime of
-    // this lua_State. Memory address is used as a key to avoid collisions.
-    lua_pushlightuserdata(L, ctx);
-    lua_insert(L, -2);
-    lua_settable(L, LUA_REGISTRYINDEX);
-
-    return ctx;
-}
 auto init_state(const char* libname) -> state_owner_t {
     auto globals = std::to_array<luaL_Reg>({
         {"loadstring", loadstring},
@@ -120,10 +85,16 @@ auto init_state(const char* libname) -> state_owner_t {
         .globals = globals,
     });
     auto L = state.get();
-    luaopen_require(L, requireConfigInit, createCliRequireContext(L));
     path::init(L);
+    writer::init(L);
     filewriter::init(L);
+    require::open(L, {.name = "require"});
     lua_newtable(L);
+    writer::util::make(L, &std::cout);
+    lua_setfield(L, -2, "stdout");
+    writer::util::make(L, &std::cerr);
+    lua_setfield(L, -2, "stderr");
+    garbage::open(L, {.name = "garbage", .local = true});
     filesystem::open(L, {.name = "filesystem", .local = true});
     json::open(L, {.name = "json", .local = true});
     fileio::open(L, {.name = "file", .local = true});

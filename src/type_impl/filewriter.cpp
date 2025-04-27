@@ -10,14 +10,6 @@ auto filewriter::name() -> const char* {return util::name;}
 template<>
 auto filewriter::namecall_if(state_t L, filewriter::type& self, int atom) -> std::optional<int> {
     switch (static_cast<method>(atom)) {
-        case method::write: {
-            auto buf = luau::to_buffer(L, 2);
-            self.write(&buf.front(), buf.size());
-            return luau::none;
-        }
-        case method::write_string:
-            self << luaL_checkstring(L, 2);
-            return luau::none;
         case method::close:
             self.close();
             return luau::none;
@@ -34,9 +26,10 @@ auto filewriter::namecall_if(state_t L, filewriter::type& self, int atom) -> std
             self.close();
             return return_values;
         }
-        case method::eof:
-            return luau::push(L, self.eof());
-        default: return std::nullopt;
+        default: {
+            auto writer = interface<writer_t::type>(&self);
+            return writer::namecall_if(L, writer, atom);
+        }
     }
 
 }

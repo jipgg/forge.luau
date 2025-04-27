@@ -6,26 +6,26 @@
 namespace vws = std::views;
 namespace fs = std::filesystem;
 using namespace std::string_view_literals;
-std::string runCode(lua_State* L, const std::string& source);
 
 static args_wrapper args;
 
 static auto run_script(state_t L, std::string_view script) -> void {
-    auto expected = load_script(L, script);
-    if (!expected) {
-        std::println("\033[35mError: {}\033[0m", expected.error());
+    auto state = load_script(L, script);
+    if (!state) {
+        std::println("\033[35mError: {}\033[0m", state.error());
         return;
     }
-    auto status = lua_resume(*expected, L, 0);
+    for (auto arg : args.span()) lua_pushstring(*state, arg);
+    auto status = lua_resume(*state, L, args.argc);
+
     if (status != LUA_OK) {
-        std::println("\033[35mError: {}\033[0m", luaL_checkstring(*expected, -1));
+        std::println("\033[35mError: {}\033[0m", luaL_checkstring(*state, -1));
     }
 }
 
 auto main(int argc, char** argv) -> int {
-    std::println("{}", fs::current_path().generic_string());
     args = args_wrapper{argc, argv};
-    auto state = init_state();
+    auto state = init_state("plus");
     auto L = state.get();
     auto scripts = vws::filter([](std::string_view e) {
         return e.ends_with(".luau");

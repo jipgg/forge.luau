@@ -1,2 +1,2 @@
-local m = require('./module')
+local m = require('../test/module')
 print(m.name)
