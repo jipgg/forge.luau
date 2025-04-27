@@ -8,7 +8,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # language
 add_subdirectory(extern/luau)
 add_subdirectory(extern/httplib)
-add_subdirectory(extern/nlohmann_json)
 
 # source code
 add_subdirectory(src)

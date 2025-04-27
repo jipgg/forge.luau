@@ -38,13 +38,14 @@ static auto sleep_for(state_t L) -> int {
     return luau::none;
 }
 template<>
-void process::open(state_t L, library_config config) {
-    luaL_Reg const process[] = {
+auto lib::process::name() -> std::string {return "process";}
+template<>
+void lib::process::push(state_t L) {
+    constexpr auto process = std::to_array<luaL_Reg>({
         {"system", system},
         {"args", args},
         {"arg_iterator", arg_iterator},
         {"sleep_for", sleep_for},
-        {nullptr, nullptr}
-    };
-    config.apply(L, process);
+    });
+    push_api(L, process);
 }

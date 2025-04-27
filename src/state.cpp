@@ -85,21 +85,15 @@ auto init_state(const char* libname) -> state_owner_t {
         .globals = globals,
     });
     auto L = state.get();
+    open_require(L);
     path::init(L);
     writer::init(L);
     filewriter::init(L);
-    require::open(L, {.name = "require"});
     lua_newtable(L);
-    writer::util::make(L, &std::cout);
-    lua_setfield(L, -2, "stdout");
-    writer::util::make(L, &std::cerr);
-    lua_setfield(L, -2, "stderr");
-    garbage::open(L, {.name = "garbage", .local = true});
-    filesystem::open(L, {.name = "filesystem", .local = true});
-    json::open(L, {.name = "json", .local = true});
-    fileio::open(L, {.name = "file", .local = true});
-    consoleio::open(L, {.name = "console", .local = true});
-    process::open(L, {.name = "process", .local = true});
+    lib::io::as_field(L);
+    lib::garbage::as_field(L);
+    lib::filesystem::as_field(L);
+    lib::process::as_field(L);
     lua_setglobal(L, libname);
     luaL_sandbox(L);
     return state;

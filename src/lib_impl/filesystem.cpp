@@ -243,7 +243,9 @@ auto push_directory_iterator(state_t L, path_t const& directory, bool recursive)
 }
 
 template<>
-auto filesystem::open(state_t L, library_config config) -> void {
+auto lib::filesystem::name() -> std::string {return "filesystem";}
+template<>
+void lib::filesystem::push(state_t L) {
     const luaL_Reg filesystem[] = {
         {"remove", remove},
         {"remove_all", remove_all},
@@ -271,5 +273,7 @@ auto filesystem::open(state_t L, library_config config) -> void {
         {"home_path", home_path},
         {nullptr, nullptr}
     };
-    config.apply(L, filesystem);
+    lua_newtable(L);
+    luaL_register(L, nullptr, filesystem);
 }
+

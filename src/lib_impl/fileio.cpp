@@ -4,17 +4,6 @@
 #include <iostream>
 namespace fs = std::filesystem;
 
-template<class Ty>
-concept has_is_open = requires (Ty& v) {
-{v.is_open()} -> std::same_as<bool>;
-};
-
-template<has_is_open Ty>
-static auto check_open(state_t L, fs::path const& path, Ty& file) -> void {
-    if (not file.is_open()) {
-        luaL_errorL(L, "failed to open file '%s'.", path.string().c_str());
-    }
-}
 
 static auto write_string(state_t L) -> int {
     fs::path destination = to_path(L, 1);

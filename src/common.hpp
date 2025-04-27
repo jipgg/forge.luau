@@ -46,17 +46,26 @@ using filewriter = type_impl<std::ofstream>;
 using filewriter_t = filewriter::type;
 using writer = type_impl<interface<std::ostream>>;
 using writer_t = writer::type;
+using string_opt = std::optional<std::string>;
 template<class Ty>
 struct lib_impl {
-    static void open(state_t L, library_config config);
+    static auto name() -> std::string;
+    static void push(state_t L);
+    static void open(state_t L) {
+        push(L);
+        lua_setglobal(L, name().c_str());
+    }
+    static void as_field(state_t L, int idx = -2, std::string const& field = name()) {
+        push(L);
+        lua_setfield(L, idx, field.c_str());
+    }
 };
+namespace lib {
 using filesystem = lib_impl<struct filesystem_tag>;
-using fileio = lib_impl<struct fileio_tag>;
-using consoleio = lib_impl<struct consoleio_tag>;
+using io = lib_impl<struct io_tag>;
 using process = lib_impl<struct process_tag>;
-using json = lib_impl<struct json_tag>;
-using require = lib_impl<struct require_tag>;
 using garbage = lib_impl<struct garbage_tag>;
+}
 auto push_directory_iterator(state_t L, path_t const& directory, bool recursive) -> int;
 auto to_path(state_t L, int idx) -> path_t;
 auto init_state(const char* libname = "lib") -> state_owner_t;
@@ -69,6 +78,13 @@ struct require_context {
     bool codegen_enabled;
 };
 auto current_require_context(state_t L) -> require_context;
+inline void push_api(state_t L, std::span<const luaL_Reg> api) {
+    lua_newtable(L);
+    for (auto const& entry : api) {
+        lua_pushcfunction(L, entry.func, entry.name);
+        lua_setfield(L, -2, entry.name);
+    }
+}
 
 enum class read_file_error {
     not_a_file,

@@ -1,11 +1,9 @@
 add_executable(executable
     cli.cpp
     state.cpp
-    lib_impl/require.cpp
+    require.cpp
     lib_impl/filesystem.cpp
-    lib_impl/json.cpp
-    lib_impl/fileio.cpp
-    lib_impl/consoleio.cpp
+    lib_impl/io.cpp
     lib_impl/process.cpp
     lib_impl/garbage.cpp
     type_impl/filewriter.cpp
@@ -27,7 +25,6 @@ target_link_libraries(executable PRIVATE
     Luau.Require
     Luau.RequireNavigator
     httplib
-    nlohmann_json::nlohmann_json
 )
 target_include_directories(executable PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 set_target_properties(executable PROPERTIES OUTPUT_NAME ${PROJECT_NAME})

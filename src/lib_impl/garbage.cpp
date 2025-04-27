@@ -9,11 +9,12 @@ static auto count(state_t L) -> int {
 } 
 
 template<>
-void garbage::open(state_t L, library_config config) {
-    const luaL_Reg lib[] = {
+auto lib::garbage::name() -> std::string {return "garbage";}
+template<>
+void lib::garbage::push(state_t L) {
+    constexpr auto lib = std::to_array<luaL_Reg>({
         {"collect", collect},
         {"count", count},
-        {nullptr, nullptr}
-    };
-    config.apply(L, lib);
+    });
+    push_api(L, lib);
 }

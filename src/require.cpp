@@ -33,11 +33,8 @@ static auto create_require_context(lua_State* L) -> void*
 
     return ctx;
 }
-template<>
-void require::open(state_t L, library_config config) {
-    config.apply(L, [](auto L) {
-        lua_pushrequire(L, requireConfigInit, create_require_context(L));
-    });
+void open_require(state_t L) {
+    luaopen_require(L, requireConfigInit, create_require_context(L));
 }
 auto current_require_context(state_t L) -> require_context {
     lua_getfield(L, LUA_REGISTRYINDEX, context_key);
