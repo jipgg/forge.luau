@@ -60,6 +60,7 @@ static auto useratom(const char* str, size_t len) -> int16_t {
 auto load_script(state_t L, fs::path const& path) -> std::expected<state_t, std::string> {
     auto main_thread = lua_mainthread(L);
     auto script_thread = lua_newthread(main_thread);
+    luaL_sandboxthread(script_thread);
     std::ifstream file{path};
     if (!file.is_open()) {
         return std::unexpected(std::format("failed to open {}", path.string()));

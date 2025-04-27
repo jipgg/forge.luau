@@ -48,9 +48,10 @@ enum class method {
     parent,
     child,
     descendants,
-    each_child,
-    each_descendant,
+    clone,
     remove_extension,
+    iterate_children,
+    iterate_descendants,
     COMPILE_TIME_ENUM_SENTINEL
 };
 #endif

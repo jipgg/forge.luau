@@ -18,9 +18,11 @@ auto path::name() -> const char* {
 template<>
 auto path::namecall_if(state_t L, type& self, int atom)-> std::optional<int> {
     switch (static_cast<method>(atom)) {
-        case method::each_child:
+        case method::clone:
+            return util::push(L, self);
+        case method::iterate_children:
             return push_directory_iterator(L, self, false);
-        case method::each_descendant:
+        case method::iterate_descendants:
             return push_directory_iterator(L, self, true);
         case method::is_directory:
             return luau::push(L, fs::is_directory(self));
