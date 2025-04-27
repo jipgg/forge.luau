@@ -3,7 +3,7 @@
 #include "method.hpp"
 using util = writer::util;
 template<>
-const char* util::name{"plus_writer"};
+const char* util::name{"__writer"};
 
 template<>
 auto writer::name() -> const char* {return util::name;}

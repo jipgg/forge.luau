@@ -7,7 +7,7 @@ namespace fs = std::filesystem;
 using util = path::util;
 
 template<>
-const char* util::name{"path"};
+const char* util::name{"__path"};
 auto to_path(state_t L, int idx) -> path_t {
     return util::get_or(L, idx, [&]{return luaL_checkstring(L, idx);});
 }

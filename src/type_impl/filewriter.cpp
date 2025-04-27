@@ -3,7 +3,7 @@
 #include "method.hpp"
 using util = filewriter::util;
 template<>
-const char* util::name{"filewriter"};
+const char* util::name{"__filewriter"};
 
 template<>
 auto filewriter::name() -> const char* {return util::name;}

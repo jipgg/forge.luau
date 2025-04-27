@@ -67,7 +67,7 @@ template<>
 void lib::io::push(state_t L) {
     constexpr auto lib = std::to_array<luaL_Reg>({
         {"scan", scan},
-        {"file_writer", file_writer},
+        {"filewriter", file_writer},
     });
     push_api(L, lib);
     writer::util::make(L, &std::cout);

@@ -7,10 +7,11 @@ for i, v in plus.filesystem.current_path():child("src"):descendants() do
     print(`{i} = {v:generic_string()}`)
 end
 
-plus.io.file_writer("abc", true):println("im chanining"):close_after(function(self)
+
+plus.io.filewriter("abc", true):println("im chanining"):close_after(function(self)
     print("closing")
 end)
-plus.io.file_writer("abc", true):close_after(function(self: __writer)
+plus.io.filewriter("abc", true):close_after(function(self: __writer)
     self:println("helllo"):print("byteeee"):ln()
 end)
 

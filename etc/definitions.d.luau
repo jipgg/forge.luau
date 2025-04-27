@@ -3,7 +3,7 @@ type file_type_t = "directory" | "symlink" | "file"
 type path_t = __path | string
 type path = __path
 type writer = __writer
-type file_writer = __file_writer
+type filewriter = __filewriter
 type filesystem = {
     rename: (from: path_t, to: path_t) -> (),
     remove: (path: path_t) -> boolean,
@@ -30,10 +30,6 @@ type filesystem = {
     read_symlink: (symlink: path_t) -> path,
     home_path: () -> path,
 }
-type json = {
-    parse: <Ty>(json: string) -> Ty,
-    to_json: <Ty>(json: Ty) -> string,
-}
 type process = {
     system: (command: string) -> number,
     arg_iterator: () -> (() -> string?),
@@ -47,12 +43,11 @@ type garbage = {
 type io = {
     stdout: writer,
     stderr: writer,
-    file_writer: (file: path_t, append_mode: boolean?) -> file_writer,
+    filewriter: (file: path_t, append_mode: boolean?) -> filewriter,
 }
 type plus = {
     process: process,
     filesystem: filesystem,
-    json: json,
     garbage: garbage,
     io: io,
 }
@@ -68,18 +63,18 @@ declare class __writer
     function eof(self): boolean
     function __concat(self, other: any): writer
 end
-declare class __file_writer extends __writer
-    function print(self, str: string): file_writer
-    function println(self, str: string): file_writer
-    function write(self, buf: buffer): file_writer
-    function writeln(self, buf: buffer): file_writer
-    function ln(self): file_writer
-    function endl(self): file_writer
-    function flush(self): file_writer
+declare class __filewriter extends __writer
+    function print(self, str: string): filewriter
+    function println(self, str: string): filewriter
+    function write(self, buf: buffer): filewriter
+    function writeln(self, buf: buffer): filewriter
+    function ln(self): filewriter
+    function endl(self): filewriter
+    function flush(self): filewriter
     function is_open(self): boolean
     function close(self): ()
     function close_after(self, fn: (self: writer) -> ()): (boolean?, string)
-    function __concat(self, other: any): file_writer
+    function __concat(self, other: any): filewriter
 end
 declare class __path
     function string(self): string
