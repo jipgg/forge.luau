@@ -1,18 +1,19 @@
 --!strict
-type stack<T> = {
-    empty: <Stack>(Stack) -> boolean,
-}
-local writer = pls.io.file_writer("heeelllo")
+local e = require('@test/module')
+print(e.name)
+local writer = pls.io.file_writer("heeelllo", true)
 writer:print("a", 'b', 1, 2, 3.2, '\n')
-    :writei8(1)
     :writeu8(2)
     :writef64(12.34)
     :writef64(12.34)
     :writef64(12.34)
     :writef64(12.34)
     :writef64(12.34)
-    :close()
-local e = pls.result("abx", nil)
+    :write("\n\n\n\nboom")
+    :writeu8(12)
+    :writei8(12)
+    :style{fg='red'}:print("eeeee"):style{fg='reset'}
+local e = pls.result("abc", nil)
 print(pls.fs.current_path())
 -- local result = pls.monad.result
 -- local path = pls.filesystem.path

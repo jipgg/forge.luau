@@ -47,12 +47,21 @@ export type reader = {
     flush: <T>(T) -> T,
     eof: <T>(T) -> boolean,
 }
+type console_color = 'reset' | 'black' | 'red' | 'green' | 'yellow' | 'blue' | 'magenta' | 'cyan' | 'white' | 'default'
+type console_style = {
+    fg: console_color?,
+    bold: boolean?,
+    dim: boolean?,
+    underlined: boolean?,
+    blinking: boolean?,
+    hidden: boolean?,
+    bg: console_color?,
+}
 export type writer = {
     print: <T, U...>(self: T, U...) -> T,
-    println: <T, U...>(self: T, U...) -> T,
-    write: <T>(T, buf: buffer) -> T,
-    writeln: <T>(T, buf: buffer) -> T,
+    write: <T, U...>(self: T, U...) -> T,
     writestring: <T>(T, str: string) -> T,
+    writebuffer: <T>(T, buf: buffer) -> T,
     writeu8: <T>(T, val: number) -> T,
     writei8: <T>(T, val: number) -> T,
     writei16: <T>(T, val: number) -> T,
@@ -64,6 +73,12 @@ export type writer = {
     endl: <T>(T) -> T,
     flush: <T>(T) -> T,
     eof: <T>(T) -> boolean,
+    good: <T>(T) -> boolean,
+    bad: <T>(T) -> boolean,
+    seekp: <T>(T, pos: number) -> T,
+    tellp: <T>(T) -> number,
+    clear: <T>(T) -> T,
+    style: <T>(T, style: console_style) -> T
 }
 type file_descriptor = {
     is_open: <T>(T) -> boolean,
