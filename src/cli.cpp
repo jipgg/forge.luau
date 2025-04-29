@@ -1,6 +1,5 @@
 #include "common.hpp"
 #include <print>
-#include <optional>
 #include <ranges>
 #include <filesystem>
 namespace vws = std::views;
@@ -9,7 +8,7 @@ using namespace std::string_view_literals;
 
 static args_wrapper args;
 
-static auto run_script(state_t L, std::string_view script) -> void {
+static auto run_script(lua_State* L, std::string_view script) -> void {
     auto state = load_script(L, script);
     if (!state) {
         std::println("\033[35mError: {}\033[0m", state.error());
@@ -25,7 +24,7 @@ static auto run_script(state_t L, std::string_view script) -> void {
 
 auto main(int argc, char** argv) -> int {
     args = args_wrapper{argc, argv};
-    auto state = init_state("plus");
+    auto state = init_state("pls");
     auto L = state.get();
     auto scripts = vws::filter([](std::string_view e) {
         return e.ends_with(".luau");

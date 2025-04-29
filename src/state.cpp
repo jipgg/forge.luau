@@ -6,50 +6,42 @@
 #include <fstream>
 #include <filesystem>
 #include <expected>
-#include <iostream>
 #include "common.hpp"
-#include "utility/compile_time.hpp"
-#include "Luau/ReplRequirer.h"
-#include "Luau/Coverage.h"
-#include <unordered_map>
-#include <print>
-#include <vector>
-#include <functional>
-#include "utility/luau.hpp"
-#include "type_impl/method.hpp"
+#include "util/comptime.hpp"
+#include "named_atom.hpp"
 namespace fs = std::filesystem;
 namespace rgs = std::ranges;
 using cstr_t = const char*;
 using std::string;
 
-static auto loadstring(state_t L) -> int {
+static auto loadstring(lua_State* L) -> int {
     auto l = size_t{};
     auto s = luaL_checklstring(L, 1, &l);
     auto chunkname = luaL_optstring(L, 2, s);
     lua_setsafeenv(L, LUA_ENVIRONINDEX, false);
-    auto bytecode = luau::compile({s, l}, compile_options());
+    auto bytecode = lua::compile({s, l}, compile_options());
 
-    return *luau::load(L, bytecode, {.chunkname = chunkname})
+    return *lua::load(L, bytecode, {.chunkname = chunkname})
     .transform([] {
         return 1;
     }).transform_error([&](std::string err) {
-        return luau::push_values(L, luau::nil, err);
+        return lua::push_tuple(L, lua::nil, err);
     });
 }
-static int collectgarbage(lua_State* L) {
+static int collectgarbage(auto L) {
     std::string_view option = luaL_optstring(L, 1, "collect");
     if (option == "collect") {
         lua_gc(L, LUA_GCCOLLECT, 0);
-        return luau::none;
+        return lua::none;
     } else if (option == "count") {
         int count = lua_gc(L, LUA_GCCOUNT, 0);
-        return luau::push(L, count);
+        return lua::push(L, count);
     }
     luaL_error(L, "collectgarbage must be called with 'count' or 'collect'");
 }
 static auto useratom(const char* str, size_t len) -> int16_t {
     std::string_view namecall{str, len};
-    static constexpr std::array info = compile_time::to_array<method>();
+    static constexpr auto info = comptime::to_array<named_atom>();
     auto found = rgs::find_if(info, [&namecall](auto const& e) {
         return e.name == namecall;
     });
@@ -57,7 +49,7 @@ static auto useratom(const char* str, size_t len) -> int16_t {
     return static_cast<int16_t>(found->value);
 }
 
-auto load_script(state_t L, fs::path const& path) -> std::expected<state_t, std::string> {
+auto load_script(lua_State* L, fs::path const& path) -> std::expected<lua_State*, std::string> {
     auto main_thread = lua_mainthread(L);
     auto script_thread = lua_newthread(main_thread);
     luaL_sandboxthread(script_thread);
@@ -68,7 +60,7 @@ auto load_script(state_t L, fs::path const& path) -> std::expected<state_t, std:
     std::string line, contents;
     while (std::getline(file, line)) contents.append(line + '\n');
 
-    return luau::compile_and_load(script_thread, contents, compile_options(), {
+    return lua::compile_and_load(script_thread, contents, compile_options(), {
         .chunkname = std::format("@{}", fs::absolute(path).replace_extension().generic_string())
     }).transform([&] {
         return script_thread;
@@ -76,25 +68,28 @@ auto load_script(state_t L, fs::path const& path) -> std::expected<state_t, std:
         return std::format("Loading error: {}", err);
     });
 }
-auto init_state(const char* libname) -> state_owner_t {
+auto init_state(const char* libname) -> lua::state_ptr {
     auto globals = std::to_array<luaL_Reg>({
         {"loadstring", loadstring},
         {"collectgarbage", collectgarbage},
     });
-    auto state = luau::new_state({
+    auto state = lua::new_state({
         .useratom = useratom,
         .globals = globals,
     });
     auto L = state.get();
     open_require(L);
-    path::init(L);
-    writer::init(L);
-    filewriter::init(L);
+    register_path(L);
+    register_writer(L);
+    register_file_writer(L);
+    register_result(L);
     lua_newtable(L);
-    lib::io::as_field(L);
-    lib::garbage::as_field(L);
-    lib::filesystem::as_field(L);
-    lib::process::as_field(L);
+    lua::push(L, result_create);
+    lua_setfield(L, -2, "result");
+    register_io(L);
+    register_garbage(L);
+    register_filesystem(L);
+    register_process(L);
     lua_setglobal(L, libname);
     luaL_sandbox(L);
     return state;

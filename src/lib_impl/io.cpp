@@ -1,42 +1,16 @@
+#pragma once
 #include "common.hpp"
 #include <iostream>
 #include <filesystem>
 namespace fs = std::filesystem;
-static auto read_line(state_t L) -> int {
+static auto scan(lua_State* L) -> int {
     auto str = std::string{};
     std::cin >> str;
-    luau::make_buffer(L, str);
-    return 1;
+    return lua::push(L, str);
 }
-static auto read(state_t L) -> int {
-    if (lua_isnone(L, 1)) {
-        auto str = std::string{};
-        std::cin >> str;
-        luau::make_buffer(L, str);
-        return 1;
-    }
-    if (lua_isbuffer(L, 1)) {
-        auto buf = luau::to_buffer(L, 1);
-        std::cin.read(&buf.front(), buf.size());
-        return luau::none;
-    }
-    auto const count = luaL_checkinteger(L, 1);
-    auto buf = luau::make_buffer(L, count);
-    std::cin.read(&buf.front(), buf.size());
-    return 1;
-}
-static auto scan(state_t L) -> int {
-    auto str = std::string{};
-    std::cin >> str;
-    return luau::push(L, str);
-}
-static auto write(state_t L) -> int {
+static auto write(lua_State* L) -> int {
     std::cout << luaL_checkstring(L, 1);
-    return luau::none;
-}
-static auto err_write(state_t L) -> int {
-    std::cerr << luaL_checkstring(L, 1);
-    return luau::none;
+    return lua::none;
 }
 template<class Ty>
 concept has_is_open = requires (Ty& v) {
@@ -44,34 +18,33 @@ concept has_is_open = requires (Ty& v) {
 };
 
 template<has_is_open Ty>
-static auto check_open(state_t L, fs::path const& path, Ty& file) -> void {
+static auto check_open(lua_State* L, fs::path const& path, Ty& file) -> void {
     if (not file.is_open()) {
         luaL_errorL(L, "failed to open file '%s'.", path.string().c_str());
     }
 }
-static auto file_writer(state_t L) -> int {
-    auto path = to_path(L, 1);
-    auto append_mode = luaL_optboolean(L, 2, false);
-    auto file = std::ofstream{};
-    if (append_mode) {
-        check_open(L, path, filewriter::util::make(L, path, std::ios::app));
+static auto push_open_file_writer(lua_State* L, fs::path const& path, bool append) -> int {
+    if (append) {
+        check_open(L, path, new_file_writer(L, std::ofstream{path, std::ios::app}));
     } else {
-        check_open(L, path, filewriter::util::make(L, path));
+        check_open(L, path, new_file_writer(L, std::ofstream{path}));
     }
     return 1;
 }
+static auto file_writer_create(lua_State* L) -> int {
+    auto path = to_path(L, 1);
+    auto append_mode = luaL_optboolean(L, 2, false);
+    return push_open_file_writer(L, path, append_mode);
+}
 
-template <>
-auto lib::io::name() -> std::string {return "io";};
-template<>
-void lib::io::push(state_t L) {
+void push_io(lua_State* L) {
     constexpr auto lib = std::to_array<luaL_Reg>({
         {"scan", scan},
-        {"filewriter", file_writer},
+        {"file_writer", file_writer_create},
     });
-    push_api(L, lib);
-    writer::util::make(L, &std::cout);
+    push_library(L, lib);
+    new_writer(L, std::cout);
     lua_setfield(L, -2, "stdout");
-    writer::util::make(L, &std::cerr);
+    new_writer(L, std::cerr);
     lua_setfield(L, -2, "stderr");
 }

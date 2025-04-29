@@ -6,18 +6,18 @@ using sec_t = std::chrono::duration<double, std::ratio<1>>;
 
 using arg_iterator_t = decltype(internal::get_args().span().begin());
 
-static auto system(state_t L) -> int {
+static auto system(lua_State* L) -> int {
     int exit_code = ::system(luaL_checkstring(L, 1));
-    return luau::push(L, exit_code);
+    return lua::push(L, exit_code);
 }
-static auto arg_iterator_closure(state_t L) -> int {
-    auto& it = luau::to_userdata<arg_iterator_t>(L, lua_upvalueindex(1));
-    if (it == internal::get_args().span().end()) return luau::none;
+static auto arg_iterator_closure(lua_State* L) -> int {
+    auto& it = lua::to_userdata<arg_iterator_t>(L, lua_upvalueindex(1));
+    if (it == internal::get_args().span().end()) return lua::none;
     lua_pushstring(L, *it);
     ++it;
     return 1;
 }
-static auto args(state_t L) -> int {
+static auto args(lua_State* L) -> int {
     auto const& wrapper = internal::get_args();
     lua_createtable(L, wrapper.span().size(), 0);
     int i{1};
@@ -27,25 +27,22 @@ static auto args(state_t L) -> int {
     }
     return 1;
 }
-static auto arg_iterator(state_t L) -> int {
+static auto arg_iterator(lua_State* L) -> int {
     auto args = internal::get_args().span().begin();
-    luau::make_userdata<arg_iterator_t>(L, internal::get_args().span().begin());
+    lua::make_userdata<arg_iterator_t>(L, internal::get_args().span().begin());
     lua_pushcclosure(L, arg_iterator_closure, "arg_iterator", 1);
     return 1;
 }
-static auto sleep_for(state_t L) -> int {
+static auto sleep_for(lua_State* L) -> int {
     std::this_thread::sleep_for(sec_t{luaL_checknumber(L, 1)});
-    return luau::none;
+    return lua::none;
 }
-template<>
-auto lib::process::name() -> std::string {return "process";}
-template<>
-void lib::process::push(state_t L) {
+void push_process(lua_State* L) {
     constexpr auto process = std::to_array<luaL_Reg>({
         {"system", system},
         {"args", args},
         {"arg_iterator", arg_iterator},
         {"sleep_for", sleep_for},
     });
-    push_api(L, process);
+    push_library(L, process);
 }

@@ -3,13 +3,13 @@
 #include <functional>
 
 struct scope_defer {
-    using fn_t = std::function<void()>;
+    using fn = std::function<void()>;
     auto operator=(const scope_defer&) -> scope_defer& = delete;
     scope_defer(const scope_defer&) = delete;
-    ~scope_defer() {_fn();}
-    explicit scope_defer(fn_t fn): _fn() {}
+    ~scope_defer() {fn_();}
+    explicit scope_defer(fn fn): fn_() {}
 private:
-    fn_t _fn;
+    fn fn_;
 };
 
 #endif

@@ -33,17 +33,6 @@ static auto create_require_context(lua_State* L) -> void*
 
     return ctx;
 }
-void open_require(state_t L) {
+void open_require(lua_State* L) {
     luaopen_require(L, requireConfigInit, create_require_context(L));
-}
-auto current_require_context(state_t L) -> require_context {
-    lua_getfield(L, LUA_REGISTRYINDEX, context_key);
-    auto& context = luau::to_userdata<ReplRequirer>(L, -1);
-    lua_pop(L, 1);
-    return {
-        .absolute_path = context.absPath,
-        .path = context.relPath,
-        .suffix = context.suffix,
-        .codegen_enabled = context.codegenEnabled(),
-    };
 }

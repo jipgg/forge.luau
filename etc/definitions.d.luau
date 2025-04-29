@@ -1,33 +1,101 @@
-type copy_options_t = "recursive" | "update existing" | "skip existing" | "create symlinks" | "copy symlinks" | "overwrite existing" | "directories only" | "create hard links" | "none"
-type file_type_t = "directory" | "symlink" | "file"
-type path_t = __path | string
-type path = __path
-type writer = __writer
-type filewriter = __filewriter
+type copy_options = "recursive" | "update existing" | "skip existing" | "create symlinks" | "copy symlinks" | "overwrite existing" | "directories only" | "create hard links" | "none"
+type file_type = "directory" | "symlink" | "file"
+type anypath = path | string
+export type result<V, E> = {
+    and_then: <T, U>(T, (V) -> U) -> U,
+    unpack: <T>(T) -> (V?, E?),
+    value: <T>(T) -> V,
+    error: <T>(T) -> E,
+    has_value: <T>(T) -> boolean,
+    has_error: <T>(T) -> boolean,
+    value_or: <T>(T, v: V) -> V, 
+    or_else: <T, U>(T, (E) -> U) -> U,
+    error_or: <T>(T, e: E) -> E, 
+    match: <T, U>(T, (V) -> U, (E) -> U) -> U,
+    switch: <T>(T, (V) -> (), (E) -> ()) -> (),
+}
+export type path = {
+    string: <T>(T) -> string,
+    generic_string: <T>(T) -> string,
+    extension: <T>(T) -> T,
+    has_extension: <T>(T) -> boolean,
+    replace_extension: <T>(T) -> T,
+    parent: <T>(T) -> T,
+    child: <T>(T, name: T | string) -> T,
+    is_absolute: <T>(T) -> boolean,
+    is_relative: <T>(T) -> boolean,
+    filename: <T>(T) -> T,
+    has_filename: <T>(T) -> boolean,
+    replace_filename: <T>(T, filename: T | string) -> T,
+    remove_filename: <T>(T) -> T,
+    remove_extension: <T>(T) -> T,
+    expect_directory: <T>(T) -> result<T, T>,
+    is_directory: <T>(T) -> boolean,
+    is_file: <T>(T) -> boolean,
+    expect_file: <T>(T) -> result<T, T>,
+    is_symlink: <T>(T) -> boolean,
+    expect_symlink: <T>(T) -> result<T, T>,
+    iterate_descendants: <T>(T) -> (() -> T?),
+    iterate_children: <T>(T) -> (() -> T?),
+    descendants: <T>(T) -> {T},
+    children: <T>(T) -> {T},
+    clone: <T>(T) -> T,
+}
+export type reader = {
+    scan: <T>(T) -> string,
+    getline: <T>(T, line: string) -> boolean,
+    flush: <T>(T) -> T,
+    eof: <T>(T) -> boolean,
+}
+export type writer = {
+    print: <T, U...>(self: T, U...) -> T,
+    println: <T, U...>(self: T, U...) -> T,
+    write: <T>(T, buf: buffer) -> T,
+    writeln: <T>(T, buf: buffer) -> T,
+    writestring: <T>(T, str: string) -> T,
+    writeu8: <T>(T, val: number) -> T,
+    writei8: <T>(T, val: number) -> T,
+    writei16: <T>(T, val: number) -> T,
+    writeu16: <T>(T, val: number) -> T,
+    writei32: <T>(T, val: number) -> T,
+    writeu32: <T>(T, val: number) -> T,
+    writef32: <T>(T, val: number) -> T,
+    writef64: <T>(T, val: number) -> T,
+    endl: <T>(T) -> T,
+    flush: <T>(T) -> T,
+    eof: <T>(T) -> boolean,
+}
+type file_descriptor = {
+    is_open: <T>(T) -> boolean,
+    close: <T>(T) -> (),
+    close_after: <T>(T, (e: T) -> ()) -> (),
+}
+export type file_writer = file_descriptor & writer
+export type file_reader = file_descriptor & reader
 type filesystem = {
-    rename: (from: path_t, to: path_t) -> (),
-    remove: (path: path_t) -> boolean,
-    remove_all: (path: path_t) -> number,
-    exists: (path: path_t) -> boolean,
-    equivalent: (a: path_t, b: path_t) -> boolean,
-    create_directory: (path: path_t) -> boolean,
-    directory_iterator: (path: path_t, recursive: boolean?) -> (() -> path?),
+    rename: (from: anypath, to: anypath) -> (),
+    remove: (path: anypath) -> boolean,
+    remove_all: (path: anypath) -> number,
+    exists: (path: anypath) -> boolean,
+    equivalent: (a: anypath, b: anypath) -> boolean,
+    create_directory: (path: anypath) -> boolean,
+    directory_iterator: (path: anypath, recursive: boolean?) -> (() -> path?),
     current_path: () -> path,
-    is_directory: (path: path_t) -> boolean,
+    is_directory: (path: anypath) -> boolean,
     is_regular_file: (path: string) -> boolean,
     temp_directory_path: () -> path,
-    weakly_canonical: (path: path_t) -> path,
-    canonical: (path: path_t) -> path,
-    absolute: (path: path_t) -> path,
-    copy: (from: path_t, to: path_t, opts: copy_options_t?) -> (),
-    copy_file: (from: path_t, to: path_t, opts: copy_options_t?) -> boolean,
-    copy_symlink: (from: path_t, to: path_t) -> (),
-    create_symlink: (to: path_t, new_symlink: path_t) -> (),
-    create_directory_symlink: (to: path_t, new_symlink: path_t) -> (),
-    create_directories: (path: path_t) -> boolean,
+    weakly_canonical: (path: anypath) -> path,
+    canonical: (path: anypath) -> path,
+    absolute: (path: anypath) -> path,
+    copy: (from: anypath, to: anypath, opts: copy_options?) -> (),
+    copy_file: (from: anypath, to: anypath, opts: copy_options?) -> boolean,
+    copy_symlink: (from: anypath, to: anypath) -> (),
+    create_symlink: (to: anypath, new_symlink: anypath) -> (),
+    create_directory_symlink: (to: anypath, new_symlink: anypath) -> (),
+    create_directories: (path: anypath) -> boolean,
     path: (path: string) -> path,
     find_in_environment: (environment_variable: string) -> path?,
-    read_symlink: (symlink: path_t) -> path,
+    read_symlink: (symlink: anypath) -> path,
     home_path: () -> path,
 }
 type process = {
@@ -41,65 +109,24 @@ type garbage = {
     collect: () -> (),
 }
 type io = {
+    stdin: reader,
     stdout: writer,
     stderr: writer,
-    filewriter: (file: path_t, append_mode: boolean?) -> filewriter,
+    scan: () -> string,
+    errprint: <Ts...>(Ts...) -> (), 
+    file_reader: (file: anypath) -> file_reader,
+    file_writer: (file: anypath, append_mode: boolean?) -> file_writer,
 }
+type __callable = {
+    __call: (self: any, ...never) -> (...never),
+}
+type type = typeof(setmetatable({}, {} :: __callable))
 type plus = {
-    process: process,
-    filesystem: filesystem,
+    result: (<V, E>(val: V, nil) -> result<V, E>) & (<V, E>(nil, err: E) -> result<V, E>) & type,
+    proc: process,
+    fs: filesystem,
     garbage: garbage,
     io: io,
 }
-
-declare class __writer
-    function print(self, str: string): writer
-    function println(self, str: string): writer
-    function write(self, buf: buffer): writer
-    function writeln(self, buf: buffer): writer
-    function ln(self): writer
-    function endl(self): writer
-    function flush(self): writer
-    function eof(self): boolean
-    function __concat(self, other: any): writer
-end
-declare class __filewriter extends __writer
-    function print(self, str: string): filewriter
-    function println(self, str: string): filewriter
-    function write(self, buf: buffer): filewriter
-    function writeln(self, buf: buffer): filewriter
-    function ln(self): filewriter
-    function endl(self): filewriter
-    function flush(self): filewriter
-    function is_open(self): boolean
-    function close(self): ()
-    function close_after(self, fn: (self: writer) -> ()): (boolean?, string)
-    function __concat(self, other: any): filewriter
-end
-declare class __path
-    function string(self): string
-    function generic_string(self): string
-    function extension(self): path
-    function has_extension(self): boolean
-    function replace_extension(self, replacement: string): path
-    function exist(self): boolean
-    function parent(self): path
-    function child(self, name: path_t): path
-    function is_absolute(self): boolean
-    function is_relative(self): boolean
-    function filename(self): path
-    function has_filename(self): boolean
-    function replace_filename(self, replacement: string): path
-    function remove_filename(self): path
-    function remove_extension(self): path
-    function is_directory(self): boolean
-    function is_file(self): boolean
-    function is_symlink(self): boolean
-    function iterate_descendants(self): (() -> path?)
-    function iterate_children(self): (() -> path?)
-    function descendants(self): {path}
-    function children(self): {path}
-    function clone(self): path
-    function __div(self, other: path_t): path
-end
-declare plus: plus
+declare pls: plus
+declare warn: <T...>(T...) -> ()

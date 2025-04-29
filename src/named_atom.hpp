@@ -1,7 +1,5 @@
-#ifndef TYPE_METHOD_HPP
-#define TYPE_METHOD_HPP
-
-enum class method {
+#pragma once
+enum class named_atom {
     read_all,
     children,
     string,
@@ -52,6 +50,22 @@ enum class method {
     remove_extension,
     iterate_children,
     iterate_descendants,
-    COMPILE_TIME_ENUM_SENTINEL
+    and_then,
+    or_else,
+    error,
+    error_or,
+    value,
+    value_or,
+    has_error,
+    has_value,
+    writestring,
+    writeu8,
+    writei8,
+    writeu16,
+    writei16,
+    writeu32,
+    writei32,
+    writef32,
+    writef64,
+    comptime_sentinel_keyword
 };
-#endif

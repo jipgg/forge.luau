@@ -6,9 +6,10 @@ add_executable(executable
     lib_impl/io.cpp
     lib_impl/process.cpp
     lib_impl/garbage.cpp
-    type_impl/filewriter.cpp
+    type_impl/file_writer.cpp
     type_impl/writer.cpp
     type_impl/path.cpp
+    type_impl/result.cpp
     ../extern/luau/CLI/src/ReplRequirer.cpp
     ../extern/luau/CLI/src/RequirerUtils.cpp
     ../extern/luau/CLI/src/Coverage.cpp

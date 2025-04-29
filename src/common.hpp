@@ -1,97 +1,68 @@
-#ifndef COMMON_HPP
-#define COMMON_HPP
-#include <memory>
+#pragma once
 #include <expected>
 #include <filesystem>
 #include <lualib.h>
 #include <Luau/Require.h>
-#include "utility/compile_time.hpp"
-#include "utility/luau.hpp"
-#include "utility/library_config.hpp"
+#include "util/lua.hpp"
 #include <fstream>
 #include <expected>
 #include <cassert>
-#include <variant>
-using luau::state_t;
-using luau::state_owner_t;
+#include "type_defs.hpp"
+auto result_create(lua_State* L) -> int;
+auto push_directory_iterator(lua_State* L, path const& directory, bool recursive) -> int;
+auto to_path(lua_State* L, int idx) -> path;
+auto push_path(lua_State* L, path const& path) -> int;
+auto init_state(const char* libname = "lib") -> lua::state_ptr;
+auto load_script(lua_State* L, const std::filesystem::path& path) -> std::expected<lua_State*, std::string>;
+void open_require(lua_State* L);
 
-template<class Ty>
-struct type_impl {
-    using type = Ty;
-    using util = luau::generic_userdatatagged_builder<Ty>;
-    static void init(state_t L);
-    static auto name() -> const char*;
-    static auto namecall_if(state_t L, Ty& self, int atom) -> std::optional<int>;
-};
-template <class Ty>
-concept has_get_method = requires (Ty v) {v.get();};
-template <class Ty, has_get_method Owning = std::shared_ptr<Ty>>
-struct interface {
-    using type = Ty;
-    using pointer = Ty*;
-    using reference = Ty&;
-    std::variant<pointer, Owning> ptr;
-    interface(pointer ptr): ptr(ptr) {}
-    interface(Owning ptr): ptr(std::move(ptr)) {}
-    constexpr auto get() -> pointer {
-        if (auto p = std::get_if<Ty*>(&ptr)) return *p;
-        else return std::get<Owning>(ptr).get();
-    }
-    constexpr auto operator->() -> pointer {return get();}
-    constexpr auto operator*() -> reference {return *get();}
-};
-using path = type_impl<std::filesystem::path>;
-using path_t = path::type;
-using filewriter = type_impl<std::ofstream>;
-using filewriter_t = filewriter::type;
-using writer = type_impl<interface<std::ostream>>;
-using writer_t = writer::type;
-using string_opt = std::optional<std::string>;
-template<class Ty>
-struct lib_impl {
-    static auto name() -> std::string;
-    static void push(state_t L);
-    static void open(state_t L) {
-        push(L);
-        lua_setglobal(L, name().c_str());
-    }
-    static void as_field(state_t L, int idx = -2, std::string const& field = name()) {
-        push(L);
-        lua_setfield(L, idx, field.c_str());
-    }
-};
-namespace lib {
-using filesystem = lib_impl<struct filesystem_tag>;
-using io = lib_impl<struct io_tag>;
-using process = lib_impl<struct process_tag>;
-using garbage = lib_impl<struct garbage_tag>;
+#define declare_library(lib, name)\
+constexpr const char* lib##_name = name;\
+void push_##lib(lua_State* L);\
+inline void open_##lib(lua_State* L) {\
+    push_##lib(L);\
+    lua_setglobal(L, lib##_name);\
+}\
+inline void setfield_##lib(lua_State* L, int idx) {\
+    push_##lib(L);\
+    lua_setfield(L, idx, lib##_name);\
+}\
+inline void register_##lib(lua_State* L) {\
+    push_##lib(L);\
+    lua_setfield(L, -2, lib##_name);\
 }
-auto push_directory_iterator(state_t L, path_t const& directory, bool recursive) -> int;
-auto to_path(state_t L, int idx) -> path_t;
-auto init_state(const char* libname = "lib") -> state_owner_t;
-auto load_script(state_t L, const std::filesystem::path& path) -> std::expected<state_t, std::string>;
-void open_require(state_t L);
-struct require_context {
-    std::filesystem::path absolute_path;
-    std::filesystem::path path;
-    std::string suffix;
-    bool codegen_enabled;
-};
-auto current_require_context(state_t L) -> require_context;
-inline void push_api(state_t L, std::span<const luaL_Reg> api) {
+#define declare_type(type)\
+constexpr auto type##_typename = "__" #type;\
+void register_##type(lua_State* L);\
+auto new_##type(lua_State* L, type&& value) -> type&;\
+auto check_##type(lua_State* L, int idx) -> type&;\
+auto as_##type(lua_State* L, int idx) -> type&;\
+auto test_namecall_##type(lua_State* L, type& self, int atom) -> std::optional<int>
+declare_type(path);
+declare_type(writer);
+declare_type(result);
+declare_type(file_writer);
+declare_library(filesystem, "fs");
+declare_library(io, "io");
+declare_library(process, "proc");
+declare_library(garbage, "gc");
+declare_library(monad, "monad");
+#undef declare_library
+#undef declare_type
+
+inline void push_library(lua_State* L, std::span<const luaL_Reg> api) {
     lua_newtable(L);
     for (auto const& entry : api) {
         lua_pushcfunction(L, entry.func, entry.name);
         lua_setfield(L, -2, entry.name);
     }
 }
-
 enum class read_file_error {
     not_a_file,
     failed_to_open,
     failed_to_read,
 };;
-inline auto read_file(path_t const& path) -> std::expected<std::string, read_file_error> {
+inline auto read_file(std::filesystem::path const& path) -> std::expected<std::string, read_file_error> {
     using err = read_file_error;
     if (not std::filesystem::is_regular_file(path)) {
         return std::unexpected(err::not_a_file);
@@ -106,8 +77,8 @@ inline auto read_file(path_t const& path) -> std::expected<std::string, read_fil
     }
     return buf;
 }
-template <class Ty>
-concept compile_options_ish = requires (Ty v) {
+template <class type>
+concept compile_options_ish = requires (type v) {
     v.optimizationLevel;
     v.debugLevel;
     v.typeInfoLevel;
@@ -115,15 +86,17 @@ concept compile_options_ish = requires (Ty v) {
     v.userdataTypes;
 };
 
-template <class Ty = lua_CompileOptions>
-requires compile_options_ish<Ty>
-static auto compile_options() -> Ty {
+template <class type = lua_CompileOptions>
+requires compile_options_ish<type>
+static auto compile_options() -> type {
     static const char* userdata_types[] = {
-        path::name(),
-        filewriter::name(),
+        path_typename,
+        writer_typename,
+        result_typename,
+        file_writer_typename,
         nullptr
     };
-    auto opts = Ty{};
+    auto opts = type{};
     opts.optimizationLevel = 2;
     opts.debugLevel = 3;
     opts.typeInfoLevel = 2;
@@ -131,24 +104,6 @@ static auto compile_options() -> Ty {
     opts.userdataTypes = userdata_types;
     return opts;
 }
-
-struct args_wrapper {
-    int argc;
-    char** argv;
-    auto span() const -> std::span<char*> {
-        return {argv, argv + argc};
-    }
-    auto view() const -> decltype(auto) {
-        return std::views::transform(span(), [](auto v) -> std::string_view {return v;});
-    }
-    auto operator[](size_t idx) const -> std::optional<std::string_view> {
-        if (idx >= argc) return std::nullopt;
-        return argv[idx];
-    }
-    args_wrapper(int argc, char** argv): argc(argc), argv(argv) {}
-    explicit args_wrapper() = default;
-};
 namespace internal {
     auto get_args() -> args_wrapper const&;
 }
-#endif

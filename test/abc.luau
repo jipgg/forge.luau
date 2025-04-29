@@ -4,6 +4,7 @@ local println = con.println
 con.print("eee")
 local proc = builtin.process
 local abc = {a = 123, b = "hello", c = true, d = {e = 1, f=2, g=3, h=4}, g = {1, 2, 3, 4, 5}}
+plus.
 local to_json = builtin.json.to_json(abc)
 local parsed: typeof(abc) = builtin.json.parse(to_json)
 local path = fs.current_path() / "test_file"
