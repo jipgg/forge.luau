@@ -5,7 +5,16 @@
 #include <filesystem>
 #include <span>
 #include <ranges>
+#include <cstdint>
 
+using u8 = std::uint8_t;
+using u16 = std::uint16_t;
+using u32 = std::uint32_t;
+using i8 = std::int8_t;
+using i16 = std::int16_t;
+using i32 = std::int32_t;
+using f32 = std::float_t;
+using f64 = std::double_t;;
 template <class type>
 struct type_wrapper {
     using holding_type = type;
@@ -32,6 +41,7 @@ private:
 };
 using path = std::filesystem::path;
 using writer = type_wrapper<std::ostream>;
+using reader = type_wrapper<std::istream>;
 using file_writer = std::ofstream;
 struct result {
     int ref;

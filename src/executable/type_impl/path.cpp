@@ -18,9 +18,9 @@ auto test_namecall_path(lua_State* L, path& self, int atom)-> std::optional<int>
     switch (static_cast<named>(atom)) {
         case named::clone:
             return push_path(L, self);
-        case named::iterate_children:
+        case named::child_iterator:
             return push_directory_iterator(L, self, false);
-        case named::iterate_descendants:
+        case named::descendant_iterator:
             return push_directory_iterator(L, self, true);
         case named::is_directory:
             return lua::push(L, fs::is_directory(self));

@@ -10,4 +10,4 @@ add_subdirectory(extern/luau)
 add_subdirectory(extern/httplib)
 
 # source code
-add_subdirectory(src)
+add_subdirectory(src/executable)

@@ -32,7 +32,8 @@ inline void register_##lib(lua_State* L) {\
     lua_setfield(L, -2, lib##_name);\
 }
 #define declare_type(type)\
-constexpr auto type##_typename = "__" #type;\
+constexpr const char* type##_name = #type;\
+constexpr const char* type##_typename = "__builtin_plus_" #type;\
 void register_##type(lua_State* L);\
 auto new_##type(lua_State* L, type&& value) -> type&;\
 auto check_##type(lua_State* L, int idx) -> type&;\
@@ -42,6 +43,7 @@ declare_type(path);
 declare_type(writer);
 declare_type(result);
 declare_type(file_writer);
+declare_type(reader);
 declare_library(filesystem, "fs");
 declare_library(io, "io");
 declare_library(process, "proc");

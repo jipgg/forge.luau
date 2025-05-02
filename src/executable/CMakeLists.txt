@@ -10,9 +10,9 @@ add_executable(executable
     type_impl/writer.cpp
     type_impl/path.cpp
     type_impl/result.cpp
-    ../extern/luau/CLI/src/ReplRequirer.cpp
-    ../extern/luau/CLI/src/RequirerUtils.cpp
-    ../extern/luau/CLI/src/Coverage.cpp
+    ${CMAKE_SOURCE_DIR}/extern/luau/CLI/src/ReplRequirer.cpp
+    ${CMAKE_SOURCE_DIR}/extern/luau/CLI/src/RequirerUtils.cpp
+    ${CMAKE_SOURCE_DIR}/extern/luau/CLI/src/Coverage.cpp
 )
 
 target_link_libraries(executable PRIVATE

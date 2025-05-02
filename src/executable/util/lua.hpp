@@ -17,9 +17,13 @@
 namespace lua {
 using state = lua_State*;
 using state_ptr = std::unique_ptr<lua_State, decltype(&lua_close)>;
-constexpr auto none = 0;
 struct nil_t{};
 constexpr nil_t nil{};
+struct none_t {
+    constexpr operator int() const {return 0;}
+    constexpr operator nil_t() const {return nil;}
+};
+constexpr none_t none{};
 using destructor = lua_Destructor;
 using reg = luaL_Reg;
 using function = lua_CFunction;

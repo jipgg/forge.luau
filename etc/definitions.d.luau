@@ -1,49 +1,50 @@
 type copy_options = "recursive" | "update existing" | "skip existing" | "create symlinks" | "copy symlinks" | "overwrite existing" | "directories only" | "create hard links" | "none"
 type file_type = "directory" | "symlink" | "file"
-type anypath = path | string
-export type result<V, E> = {
-    and_then: <T, U>(T, (V) -> U) -> U,
-    unpack: <T>(T) -> (V?, E?),
-    value: <T>(T) -> V,
-    error: <T>(T) -> E,
-    has_value: <T>(T) -> boolean,
-    has_error: <T>(T) -> boolean,
-    value_or: <T>(T, v: V) -> V, 
-    or_else: <T, U>(T, (E) -> U) -> U,
-    error_or: <T>(T, e: E) -> E, 
-    match: <T, U>(T, (V) -> U, (E) -> U) -> U,
-    switch: <T>(T, (V) -> (), (E) -> ()) -> (),
-}
-export type path = {
-    string: <T>(T) -> string,
-    generic_string: <T>(T) -> string,
-    extension: <T>(T) -> T,
-    has_extension: <T>(T) -> boolean,
-    replace_extension: <T>(T) -> T,
-    parent: <T>(T) -> T,
-    child: <T>(T, name: T | string) -> T,
-    is_absolute: <T>(T) -> boolean,
-    is_relative: <T>(T) -> boolean,
-    filename: <T>(T) -> T,
-    has_filename: <T>(T) -> boolean,
-    replace_filename: <T>(T, filename: T | string) -> T,
-    remove_filename: <T>(T) -> T,
-    remove_extension: <T>(T) -> T,
-    expect_directory: <T>(T) -> result<T, T>,
-    is_directory: <T>(T) -> boolean,
-    is_file: <T>(T) -> boolean,
-    expect_file: <T>(T) -> result<T, T>,
-    is_symlink: <T>(T) -> boolean,
-    expect_symlink: <T>(T) -> result<T, T>,
-    iterate_descendants: <T>(T) -> (() -> T?),
-    iterate_children: <T>(T) -> (() -> T?),
+type as_path = {as_path: (any) -> path}
+type anypath = path | string | as_path
+type iterator<T, U = nil> = () -> (T?, U)
+export type path_type = {
+    string: <Path>(Path) -> string,
+    generic_string: <Path>(Path) -> string,
+    extension: <Path>(Path) -> Path,
+    has_extension: <Path>(Path) -> boolean,
+    replace_extension: <Path>(Path) -> Path,
+    parent: <Path>(Path) -> Path,
+    child: <Path>(Path, name: Path | string) -> Path,
+    is_absolute: <Path>(Path) -> boolean,
+    is_relative: <Path>(Path) -> boolean,
+    filename: <Path>(Path) -> Path,
+    has_filename: <Path>(Path) -> boolean,
+    replace_filename: <Path>(Path, filename: Path | string) -> Path,
+    remove_filename: <Path>(Path) -> Path,
+    remove_extension: <Path>(Path) -> Path,
+    is_directory: <Path>(Path) -> boolean,
+    is_file: <Path>(Path) -> boolean,
+    is_symlink: <Path>(Path) -> boolean,
+    descendant_iterator: <T>(T) -> iterator<T>,
+    child_iterator: <T>(T) -> iterator<T>,
     descendants: <T>(T) -> {T},
     children: <T>(T) -> {T},
     clone: <T>(T) -> T,
 }
+export type path_meta = {
+    __div: <T>(T, anypath) -> T,
+    __concat: <T>(T, nil) -> T,
+}
+export type path = typeof(setmetatable({} :: path_type, {} :: path_meta))
 export type reader = {
     scan: <T>(T) -> string,
+    try_scan: <Reader>(Reader) -> (string?, string),
     getline: <T>(T, line: string) -> boolean,
+    line_iterator: <T>(T) -> iterator<string>,
+    readu8: <T>(T) -> number,
+    readi8: <T>(T) -> number,
+    readi16: <T>(T) -> number,
+    readu16: <T>(T, val: number) -> number,
+    readi32: <T>(T, val: number) -> number,
+    readu32: <T>(T, val: number) -> number,
+    readf32: <T>(T, val: number) -> number,
+    readf64: <T>(T, val: number) -> number,
     flush: <T>(T) -> T,
     eof: <T>(T) -> boolean,
 }
@@ -70,7 +71,6 @@ export type writer = {
     writeu32: <T>(T, val: number) -> T,
     writef32: <T>(T, val: number) -> T,
     writef64: <T>(T, val: number) -> T,
-    endl: <T>(T) -> T,
     flush: <T>(T) -> T,
     eof: <T>(T) -> boolean,
     good: <T>(T) -> boolean,
@@ -78,15 +78,19 @@ export type writer = {
     seekp: <T>(T, pos: number) -> T,
     tellp: <T>(T) -> number,
     clear: <T>(T) -> T,
-    style: <T>(T, style: console_style) -> T
 }
-type file_descriptor = {
-    is_open: <T>(T) -> boolean,
-    close: <T>(T) -> (),
+type writer_meta = {
+    __call: <T, U...>(T, U...) -> (),
+}
+--export type writer = typeof(setmetatable({} :: writer_impl, {} :: callable)) & (<T...>(T...) -> ())
+type fd<T> = {
+    is_open: (T) -> boolean,
+    close: (T) -> (),
     close_after: <T>(T, (e: T) -> ()) -> (),
 }
-export type file_writer = file_descriptor & writer
-export type file_reader = file_descriptor & reader
+type printer = <T...>(T...) -> ()
+export type file_writer = writer & fd<writer>
+export type file_reader = reader & fd<reader>
 type filesystem = {
     rename: (from: anypath, to: anypath) -> (),
     remove: (path: anypath) -> boolean,
@@ -94,7 +98,7 @@ type filesystem = {
     exists: (path: anypath) -> boolean,
     equivalent: (a: anypath, b: anypath) -> boolean,
     create_directory: (path: anypath) -> boolean,
-    directory_iterator: (path: anypath, recursive: boolean?) -> (() -> path?),
+    directory_iterator: (path: anypath, recursive: boolean?) -> iterator<path>,
     current_path: () -> path,
     is_directory: (path: anypath) -> boolean,
     is_regular_file: (path: string) -> boolean,
@@ -132,16 +136,20 @@ type io = {
     file_reader: (file: anypath) -> file_reader,
     file_writer: (file: anypath, append_mode: boolean?) -> file_writer,
 }
-type __callable = {
+type callable = {
     __call: (self: any, ...never) -> (...never),
 }
-type type = typeof(setmetatable({}, {} :: __callable))
+type type = typeof(setmetatable({}, {} :: callable))
 type plus = {
-    result: (<V, E>(val: V, nil) -> result<V, E>) & (<V, E>(nil, err: E) -> result<V, E>) & type,
     proc: process,
     fs: filesystem,
-    garbage: garbage,
+    gc: garbage,
     io: io,
+    scope: (<T>(T, block: (T) -> ()) -> ()) & (<T, U>(T, block: (T) -> U) -> ()),
+    defer: <T>(T, deferred: (T) -> (), but_first: (T) -> ()) -> (),
+    scan: () -> string,
+    warn: <T...>(T...) -> (),
+    print: <T...>(T...) -> (),
 }
 declare pls: plus
-declare warn: <T...>(T...) -> ()
+declare class userdata end

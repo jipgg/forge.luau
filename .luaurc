@@ -1,6 +1,7 @@
 {
     "languageMode": "strict",
     "aliases": {
+        "pls": "./src/luau",
         "test": "./test"
     }
 }
