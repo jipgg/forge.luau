@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <span>
 #include <lualib.h>
@@ -28,7 +29,7 @@ using destructor = lua_Destructor;
 using reg = luaL_Reg;
 using function = lua_CFunction;
 using compile_options = lua_CompileOptions;
-using useratom = int16_t(*)(const char*, size_t);
+using useratom_t = std::int16_t(*)(const char*, size_t);
 namespace codegen {
 inline auto create(state L) -> bool {
     auto const supported = luau_codegen_supported();
@@ -42,7 +43,7 @@ inline auto compile(state L, int idx) {
 struct new_state_options {
     bool codegen = true;
     bool openlibs = true;
-    useratom useratom = nullptr;
+    useratom_t useratom = nullptr;
     std::span<luaL_Reg> globals = {};
     bool sandbox = false;
 };

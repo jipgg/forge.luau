@@ -34,7 +34,6 @@ export type path_meta = {
 export type path = typeof(setmetatable({} :: path_type, {} :: path_meta))
 export type reader = {
     scan: <T>(T) -> string,
-    try_scan: <Reader>(Reader) -> (string?, string),
     getline: <T>(T, line: string) -> boolean,
     line_iterator: <T>(T) -> iterator<string>,
     readu8: <T>(T) -> number,
@@ -152,4 +151,3 @@ type plus = {
     print: <T...>(T...) -> (),
 }
 declare pls: plus
-declare class userdata end

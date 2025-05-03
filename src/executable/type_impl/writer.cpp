@@ -14,15 +14,13 @@ static auto write_number_raw(writer& to, lua_State* L, int idx = 2) -> size_t {
     return sizeof(type);
 };
 auto test_namecall_writer(lua_State* L, writer& self, int atom) -> std::optional<int> {
+    auto& os = *self;
     auto push_self = [&] {
         lua_pushvalue(L, 1);
         return 1;
     };
     using named = named_atom;
     switch (static_cast<named>(atom)) {
-        case named::writestring:
-            *self << luaL_checkstring(L, 2);
-            return push_self();
         case named::writeu8:
             write_number_raw<uint8_t>(self, L);
             return push_self();
@@ -47,21 +45,18 @@ auto test_namecall_writer(lua_State* L, writer& self, int atom) -> std::optional
         case named::writef64:
             write_number_raw<double>(self, L);
             return push_self();
-        case named::writebuffer: {
-            auto buf = lua::to_buffer(L, 2);
-            self->write(&buf.front(), buf.size());
-            return push_self();
+        case named::write: {
+            if (lua_isbuffer(L, 2)) {
+                auto buf = lua::to_buffer(L, 2);
+                os.write(&buf.front(), buf.size());
+            } else if (lua_isstring(L, 2)) {
+                os << luaL_checkstring(L, 2);
+                return push_self();
+            }
+            break;
         }
-        case named::write:
-            *self << lua::tostring_tuple(L, {.start_index = 2, .separator = "\t"}) << '\n';
-            return push_self();
-        case named::print:
-            *self << lua::tostring_tuple(L, {
-                .start_index = 2,
-                .separator = ", "}) << '\n';
-            return push_self();
         case named::flush:
-            self->flush();
+            os.flush();
             return push_self();
         case named::eof:
             return lua::push(L, self->eof());
@@ -74,13 +69,14 @@ auto test_namecall_writer(lua_State* L, writer& self, int atom) -> std::optional
         case named::clear:
             self->clear();
             return push_self();
-        case named::seekp:
-            self->seekp(luaL_checkinteger(L, 2));
+        case named::seek:
+            self->seekp(luaL_checkinteger(L, 2), std::ios::beg);
             return push_self();
-        case named::tellp:
+        case named::tell:
             return lua::push(L, static_cast<int>(self->tellp()));
         default: return std::nullopt;
     }
+    return std::nullopt;
 }
 static auto namecall(lua_State* L) -> int {
     auto& self = type::get(L, 1);
@@ -89,9 +85,16 @@ static auto namecall(lua_State* L) -> int {
     if (not pushed) luaL_errorL(L, "invalid namecall '%s'.", name);
     return *pushed;
 }
-void register_writer(lua_State* L) {
+static auto call(lua_State* L) -> int {
+    auto& self = type::get(L, 1);
+    *self << lua::tostring_tuple(L, {.start_index = 2, .separator = ", "});
+    lua_pushvalue(L, 1);
+    return 1;
+}
+void load_writer(lua_State* L) {
     luaL_Reg const metatable[] = {
         {"__namecall", namecall},
+        {"__call", call},
         {nullptr, nullptr}
     };
     type::setup(L, metatable);

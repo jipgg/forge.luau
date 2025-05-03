@@ -1,5 +1,5 @@
 CompileFlags:
   Add:
-    - "-I../../extern/luau/VM/include"
-    - "-I../../extern/luau/Compiler/include"
-    - "-I../../extern/luau/CodeGen/include"
+    - "-I../../../extern/luau/VM/include"
+    - "-I../../../extern/luau/Compiler/include"
+    - "-I../../../extern/luau/CodeGen/include"

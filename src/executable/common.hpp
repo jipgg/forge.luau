@@ -33,8 +33,7 @@ inline void register_##lib(lua_State* L) {\
 }
 #define declare_type(type)\
 constexpr const char* type##_name = #type;\
-constexpr const char* type##_typename = "__builtin_plus_" #type;\
-void register_##type(lua_State* L);\
+void load_##type(lua_State* L);\
 auto new_##type(lua_State* L, type&& value) -> type&;\
 auto check_##type(lua_State* L, int idx) -> type&;\
 auto as_##type(lua_State* L, int idx) -> type&;\
@@ -42,7 +41,7 @@ auto test_namecall_##type(lua_State* L, type& self, int atom) -> std::optional<i
 declare_type(path);
 declare_type(writer);
 declare_type(result);
-declare_type(file_writer);
+declare_type(filewriter);
 declare_type(reader);
 declare_library(filesystem, "fs");
 declare_library(io, "io");
@@ -92,10 +91,10 @@ template <class type = lua_CompileOptions>
 requires compile_options_ish<type>
 static auto compile_options() -> type {
     static const char* userdata_types[] = {
-        path_typename,
-        writer_typename,
-        result_typename,
-        file_writer_typename,
+        path_name,
+        writer_name,
+        result_name,
+        filewriter_name,
         nullptr
     };
     auto opts = type{};
