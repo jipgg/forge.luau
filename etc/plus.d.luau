@@ -33,34 +33,36 @@ declare class reader
     function __call(self): string
 end
 declare class writer
-    write: <Writer>(self: Writer, data: string | buffer) -> Writer
-    writeu8: <Writer>(self: Writer, v: number) -> Writer
-    writei8: <Writer>(self: Writer, v: number) -> Writer
-    writeu16: <Writer>(self: Writer, v: number) -> Writer
-    writei16: <Writer>(self: Writer, v: number) -> Writer
-    writeu32: <Writer>(self: Writer, v: number) -> Writer
-    writei32: <Writer>(self: Writer, v: number) -> Writer
-    writef32: <Writer>(self: Writer, v: number) -> Writer
-    writef64: <Writer>(self: Writer, v: number) -> Writer
-    flush: <Writer>(self: Writer) -> Writer
-    seek: <Writer>(self: Writer, pos: number, base: "beg" | "cur" | "end" | nil) -> Writer
+    write: <anywriter>(self: anywriter, data: string | buffer) -> anywriter
+    writeu8: <anywriter>(self: anywriter, v: number) -> anywriter
+    writei8: <anywriter>(self: anywriter, v: number) -> anywriter
+    writeu16: <anywriter>(self: anywriter, v: number) -> anywriter
+    writei16: <anywriter>(self: anywriter, v: number) -> anywriter
+    writeu32: <anywriter>(self: anywriter, v: number) -> anywriter
+    writei32: <anywriter>(self: anywriter, v: number) -> anywriter
+    writef32: <anywriter>(self: anywriter, v: number) -> anywriter
+    writef64: <anywriter>(self: anywriter, v: number) -> anywriter
+    flush: <anywriter>(self: anywriter) -> anywriter
+    seek: <anywriter>(self: anywriter, pos: number, base: "beg" | "cur" | "end" | nil) -> anywriter
     function tell(self): number
     __call: <T...>(self: writer, T...) -> writer
 end
 declare class filereader extends reader
     function lines(self, autoclose: boolean?): (() -> string?)
     isopen: boolean
-    path: path
     close: ((self: filereader, before: ((reader) -> ())?) -> ())
     function __call(self): string
 end
 declare class filewriter extends writer
-    path: path
     isopen: boolean
     close: ((self: filewriter, before: ((writer) -> ())?) -> ())
     __call: <T...>(self: filewriter, T...) -> filewriter
 end
-type fs = {
+declare class httpclient
+    function get(self, path: string): (number?, string?)
+    function post(self, path: string, body: string): (number?, string?)
+end
+type fslib = {
     rename: (from: anypath, to: anypath) -> (),
     remove: (path: anypath, all: boolean?) -> boolean,
     exists: (path: anypath) -> boolean,
@@ -78,20 +80,37 @@ type fs = {
     getenv: (var: string) -> path?,
     readsym: (symlink: anypath) -> path,
     homedir: () -> path,
-    path: (path: string) -> path,
+    path: ((path: string) -> path),
 }
-type io = {
-    stdin: reader,
-    stdout: writer,
-    stderr: writer,
-    filewriter: (file: anypath, append: boolean?) -> filewriter,
-    filereader: (file: anypath) -> filereader,
+type iolib = {
+    cin: reader,
+    cout: writer,
+    cerr: writer,
+    readfile: (file: anypath) -> string?,
+    writefile: (file: anypath, contents: string) -> boolean,
+    filewriter: ((file: anypath, append: boolean?) -> filewriter),
+    filereader: ((file: anypath) -> filereader),
 }
-type proc = {
-    shell: (command: string) -> number,
+type httplib = {
+    get: (host: string, path: string) -> (number?, string),
+    post: (host: string, path: string, body: string) -> (number?, string),
+    client: ((host: string) -> httpclient),
+}
+type oslib = {
+    is: ('linux' | 'windows' | 'macos') -> boolean,
+    execute: (command: string) -> number,
+    getenv: (env: string) -> string?,
     args: () -> iterator<string>,
     sleep: (seconds: number) -> (), 
 }
-declare io: io
-declare proc: proc
-declare fs: fs
+type jsonlib = {
+    encode: <T>(t: T) -> string,
+    decode: <T>(src: string) -> T,
+}
+declare io: iolib
+declare os: typeof(os) & oslib
+declare fs: fslib
+declare http: httplib
+declare json: jsonlib
+declare json: jsonlib
+declare collectgarbage: (('collect') -> ()) & (('count') -> number)

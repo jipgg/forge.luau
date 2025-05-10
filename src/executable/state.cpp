@@ -8,10 +8,9 @@
 #include <expected>
 #include "common.hpp"
 #include "util/comptime.hpp"
-#include "named_atom.hpp"
+#include "NamedAtom.hpp"
 namespace fs = std::filesystem;
-namespace rgs = std::ranges;
-using cstr_t = const char*;
+namespace sr = std::ranges;
 using std::string;
 
 static auto loadstring(lua_State* L) -> int {
@@ -41,11 +40,11 @@ static int collectgarbage(auto L) {
 }
 static auto useratom(const char* str, size_t len) -> int16_t {
     std::string_view namecall{str, len};
-    static constexpr auto info = comptime::to_array<named_atom>();
-    auto found = rgs::find_if(info, [&namecall](auto const& e) {
+    static constexpr auto info = comptime::to_array<NamedAtom>();
+    auto found = sr::find_if(info, [&namecall](auto const& e) {
         return e.name == namecall;
     });
-    if (found == rgs::end(info)) return -1;
+    if (found == sr::end(info)) return -1;
     return static_cast<int16_t>(found->value);
 }
 
@@ -68,7 +67,7 @@ auto load_script(lua_State* L, fs::path const& path) -> std::expected<lua_State*
         return std::format("Loading error: {}", err);
     });
 }
-auto init_state(const char* libname) -> lua::state_ptr {
+auto init_state(const char* libname) -> lua::StateOwner {
     auto globals = std::to_array<luaL_Reg>({
         {"loadstring", loadstring},
         {"collectgarbage", collectgarbage},
@@ -79,20 +78,15 @@ auto init_state(const char* libname) -> lua::state_ptr {
     });
     auto L = state.get();
     open_require(L);
-    load_path(L);
-    load_writer(L);
-    load_filewriter(L);
-    open_filesystem(L);
-    open_io(L);
-    open_process(L);
-    // lua_newtable(L);
-    // lua::push(L, result_create);
-    // lua_setfield(L, -2, "result");
-    // register_io(L);
-    // register_garbage(L);
-    // register_filesystem(L);
-    // register_process(L);
-    // lua_setglobal(L, libname);
+    Type<Path>::setup(L);
+    Type<Writer>::setup(L);
+    Type<FileWriter>::setup(L);
+    Type<HttpClient>::setup(L);
+    open_fslib(L);
+    open_iolib(L);
+    open_oslib(L);
+    open_httplib(L);
+    open_jsonlib(L);
     luaL_sandbox(L);
     return state;
 }

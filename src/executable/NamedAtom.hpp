@@ -1,5 +1,8 @@
 #pragma once
-enum class named_atom {
+enum class NamedAtom {
+    get,
+    post,
+    status,
     subpaths,
     subpath,
     generic,

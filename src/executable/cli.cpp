@@ -6,9 +6,10 @@ namespace vws = std::views;
 namespace fs = std::filesystem;
 using namespace std::string_view_literals;
 
-static args_wrapper args;
+static ArgsWrapper args;
 
 static auto run_script(lua_State* L, std::string_view script) -> void {
+	std::println("{}", fs::current_path().string());
     auto state = load_script(L, script);
     if (!state) {
         std::println("\033[35mError: {}\033[0m", state.error());
@@ -23,7 +24,7 @@ static auto run_script(lua_State* L, std::string_view script) -> void {
 }
 
 auto main(int argc, char** argv) -> int {
-    args = args_wrapper{argc, argv};
+    args = ArgsWrapper{argc, argv};
     auto state = init_state("pls");
     auto L = state.get();
     auto scripts = vws::filter([](std::string_view e) {
@@ -46,6 +47,6 @@ auto main(int argc, char** argv) -> int {
     }
     return 0;
 }
-auto internal::get_args() -> args_wrapper const& {
+auto internal::get_args() -> ArgsWrapper const& {
     return args;
 }

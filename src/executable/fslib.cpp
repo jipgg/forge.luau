@@ -185,7 +185,7 @@ static auto homedir(auto L) -> int {
 template <class Iterator>
 static auto directory_iterator_closure(auto L) -> int {
     auto& it = lua::to_userdata<Iterator>(L, lua_upvalueindex(1));
-    auto& entry = as_path(L, lua_upvalueindex(2));
+    auto& entry = Type<Path>::to(L, lua_upvalueindex(2));
     const Iterator end{};
     if (it != end) {
         const std::filesystem::directory_entry& e = *it;
@@ -196,7 +196,7 @@ static auto directory_iterator_closure(auto L) -> int {
     }
     return 0;
 }
-auto push_directory_iterator(lua_State* L, path const& directory, bool recursive) -> int {
+auto push_directory_iterator(lua_State* L, Path const& directory, bool recursive) -> int {
     if (not fs::is_directory(directory)) {
         luaL_errorL(L, "path '%s' must be a directory", directory.string().c_str());
     }
@@ -221,7 +221,7 @@ auto push_directory_iterator(lua_State* L, path const& directory, bool recursive
     return 1;
 }
 
-void push_filesystem(lua_State* L) {
+void open_fslib(lua_State* L) {
     const luaL_Reg filesystem[] = {
         {"remove", remove},
         {"rename", rename},
@@ -242,7 +242,6 @@ void push_filesystem(lua_State* L) {
         {"homedir", homedir},
         {nullptr, nullptr}
     };
-    lua_newtable(L);
-    luaL_register(L, nullptr, filesystem);
+    luaL_register(L, "fs", filesystem);
 }
 

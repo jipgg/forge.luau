@@ -10,4 +10,4 @@ CompileFlags:
     - "-I../../extern/luau/Require/Runtime/include"
 
     - "-I../../extern/httplib"
-    - "-I../../extern/nlohmann_json/include"
+    - "-I../../extern/nlohmannjson/include"

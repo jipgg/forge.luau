@@ -24,9 +24,9 @@ static auto check_open(lua_State* L, fs::path const& path, Ty& file) -> void {
 }
 static auto push_open_filewriter(lua_State* L, fs::path const& path, bool append) -> int {
     if (append) {
-        check_open(L, path, new_filewriter(L, std::ofstream{path, std::ios::app}));
+        check_open(L, path, Type<FileWriter>::make(L, std::ofstream{path, std::ios::app}));
     } else {
-        check_open(L, path, new_filewriter(L, std::ofstream{path}));
+        check_open(L, path, Type<FileWriter>::make(L, std::ofstream{path}));
     }
     return 1;
 }
@@ -36,13 +36,14 @@ static auto filewriter_create(lua_State* L) -> int {
     return push_open_filewriter(L, path, append_mode);
 }
 
-void push_io(lua_State* L) {
+void open_iolib(lua_State* L) {
     constexpr auto lib = std::to_array<luaL_Reg>({
         {"filewriter", filewriter_create},
     });
     push_library(L, lib);
-    new_writer(L, std::cout);
-    lua_setfield(L, -2, "stdout");
-    new_writer(L, std::cerr);
-    lua_setfield(L, -2, "stderr");
+    Type<Writer>::make(L, std::cout);
+    lua_setfield(L, -2, "cout");
+    Type<Writer>::make(L, std::cerr);
+    lua_setfield(L, -2, "cerr");
+    lua_setglobal(L, "io");
 }

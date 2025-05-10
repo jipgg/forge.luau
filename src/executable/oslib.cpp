@@ -6,7 +6,7 @@ using sec_t = std::chrono::duration<double, std::ratio<1>>;
 
 using arg_iterator_t = decltype(internal::get_args().span().begin());
 
-static auto shell(lua_State* L) -> int {
+static auto system(lua_State* L) -> int {
     int exit_code = ::system(luaL_checkstring(L, 1));
     return lua::push(L, exit_code);
 }
@@ -27,11 +27,18 @@ static auto sleep(lua_State* L) -> int {
     std::this_thread::sleep_for(sec_t{luaL_checknumber(L, 1)});
     return lua::none;
 }
-void push_process(lua_State* L) {
-    constexpr auto process = std::to_array<luaL_Reg>({
-        {"shell", shell},
+void open_oslib(lua_State* L) {
+    const luaL_Reg extra[] = {
+        {"system", system},
         {"args", args},
         {"sleep", sleep},
-    });
-    push_library(L, process);
+        {nullptr, nullptr}
+    };
+    lua_getglobal(L, "os");
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        luaopen_os(L);
+        lua_getglobal(L, "os");
+    }
+    luaL_register(L, nullptr, extra);
 }

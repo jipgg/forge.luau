@@ -2,12 +2,14 @@ add_executable(executable
     cli.cpp
     state.cpp
     require.cpp
-    lib_impl/filesystem.cpp
-    lib_impl/io.cpp
-    lib_impl/process.cpp
-    type_impl/filewriter.cpp
-    type_impl/writer.cpp
-    type_impl/path.cpp
+    fslib.cpp
+    iolib.cpp
+    httplib.cpp
+    jsonlib.cpp
+    oslib.cpp
+    iotypes.cpp
+    fstypes.cpp
+    httptypes.cpp
     ${CMAKE_SOURCE_DIR}/extern/luau/CLI/src/ReplRequirer.cpp
     ${CMAKE_SOURCE_DIR}/extern/luau/CLI/src/RequirerUtils.cpp
     ${CMAKE_SOURCE_DIR}/extern/luau/CLI/src/Coverage.cpp
@@ -24,6 +26,7 @@ target_link_libraries(executable PRIVATE
     Luau.Require
     Luau.RequireNavigator
     httplib
+    nlohmann_json::nlohmann_json
 )
 target_include_directories(executable PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 set_target_properties(executable PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
