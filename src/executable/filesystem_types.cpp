@@ -61,6 +61,18 @@ static auto init_properties() {
         else if (fs::is_symlink(self)) return lua::push(L, "symlink");
         else return lua::push(L, "unknown");
     });
+    props::add("canonical", [](auto L, Path const& self) {
+        std::error_code ec{};
+        auto& v = Type<Path>::make(L, fs::canonical(self, ec));
+        if (ec) {
+            lua_pop(L, 1);
+            luaL_errorL(L, "%s", ec.message().c_str());
+        }
+        return 1;
+    });
+    props::add("absolute", [](auto L, Path const& self) {
+        return Type<Path>::push(L, fs::absolute(self));
+    });
 }
 TYPE_CONFIG (Path) {
     .type = "path",

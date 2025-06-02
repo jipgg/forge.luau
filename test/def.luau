@@ -6,7 +6,7 @@ end
 print(typeof(forge.io.stdin))
 print(_VERSION)
 print(_G)
-local r = forge.io.filereader("def.luau")
+local r = forge.io.filereader("test/def.luau")
 for line in r:lines() do
     print(line)
 end
@@ -16,8 +16,7 @@ for i, v in forge do
     print(`{i} = {v}`)
 end
 
-forge.proc.sleep(1)
-print("yoo")
+print(forge.fs.path("abc").canonical)
 -- local stack = require('@pls/stack')
 -- print("yoo")
 -- local path = fs.path("hello.luau")

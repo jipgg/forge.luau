@@ -8,13 +8,15 @@ declare class path
     parent: path
     stem: string
     type: filetype
+    absolute: path
+    canonical: path
     function string(self): string
     function generic(self): string
     function isabsolute(self): boolean
     function isrelative(self): boolean
     function child(self, subpath: anypath): path
     function clone(self): path
-    function subpaths(self, recursive: boolean?): iterator<path>
+    function children(self, recursive: boolean?): iterator<path>
     function __div(self, other: anypath): path
     function __tostring(self): string
 end

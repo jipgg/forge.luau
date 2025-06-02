@@ -236,11 +236,26 @@ void loader::filesystem(lua_State* L, int idx) {
         {"absolute", absolute},
         {"copy", copy},
         {"newsym", newsym},
-        {"path", path_create},
+        //{"path", path_create},
         {"getenv", getenv},
         {"readsym", readsym},
         {"homedir", homedir},
     }));
+    lua_newtable(L);
+    lua::set_functions(L, -2, std::to_array<luaL_Reg>({
+        {"home", homedir},
+        {"temp", tmpdir},
+        {"current", currdir},
+    }));
+    if (luaL_newmetatable(L, "path_type")) {
+        lua::set_functions(L, -2, std::to_array<luaL_Reg>({
+            {"__call", [](lua_State* L) -> int {
+                return push_path(L, luaL_checkstring(L, 2));
+            }},
+        }));
+    }
+    lua_setmetatable(L, -2);
+    lua_setfield(L, -2, "path");
 }
 
 // void open_fslib(lua_State* L) {
