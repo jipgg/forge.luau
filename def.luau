@@ -1,7 +1,23 @@
-print(typeof(io.stdin))
-local input = io.stdin:scan()
-print(`input is {input}`)
 
+local args = {...}
+for i, v in args do
+    print(`args: {i} = {v}`)
+end
+print(typeof(forge.io.stdin))
+print(_VERSION)
+print(_G)
+local r = forge.io.filereader("def.luau")
+for line in r:lines() do
+    print(line)
+end
+forge.fs.path("eeee")
+forge.io.stdout("hello")
+for i, v in forge do
+    print(`{i} = {v}`)
+end
+
+forge.proc.sleep(1)
+print("yoo")
 -- local stack = require('@pls/stack')
 -- print("yoo")
 -- local path = fs.path("hello.luau")

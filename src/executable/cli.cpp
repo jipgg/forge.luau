@@ -2,13 +2,13 @@
 #include <print>
 #include <ranges>
 #include <filesystem>
+#include "util/ArgsWrapper.hpp"
 namespace vws = std::views;
 namespace fs = std::filesystem;
 using namespace std::string_view_literals;
 
-static ArgsWrapper args;
 
-static auto run_script(lua_State* L, std::string_view script) -> void {
+static auto run_main_entry_script(ArgsWrapper const& args, lua_State* L, std::string_view script) -> void {
 	std::println("{}", fs::current_path().string());
     auto state = load_script(L, script);
     if (!state) {
@@ -24,7 +24,7 @@ static auto run_script(lua_State* L, std::string_view script) -> void {
 }
 
 auto main(int argc, char** argv) -> int {
-    args = ArgsWrapper{argc, argv};
+    auto args = ArgsWrapper{argc, argv};
     auto state = init_state("pls");
     auto L = state.get();
     auto scripts = vws::filter([](std::string_view e) {
@@ -39,14 +39,11 @@ auto main(int argc, char** argv) -> int {
                 if (not entry.is_regular_file() or path.extension() != ".luau") {
                     continue;
                 }
-                run_script(L, path.string());
+                run_main_entry_script(args, L, path.string());
             }
         } else {
-            run_script(L, script);
+            run_main_entry_script(args, L, script);
         }
     }
     return 0;
-}
-auto internal::get_args() -> ArgsWrapper const& {
-    return args;
 }

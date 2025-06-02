@@ -213,5 +213,23 @@ inline auto tostring_tuple(State L, TostringFormatOptions const& opts = {}) -> s
 inline void pop(State L, int amount = 1) {
     lua_pop(L, amount);
 }
+inline void set_functions(lua_State* L, int idx, std::span<const luaL_Reg> fns) {
+    for (auto const& entry : fns) {
+        lua_pushcfunction(L, entry.func, entry.name);
+        lua_setfield(L, idx, entry.name);
+    }
+}
+inline void push_function_table(lua_State* L, std::span<const luaL_Reg> fns) {
+    lua_newtable(L);
+    set_functions(L, -2, fns);
+}
+template <class T>
+concept CompileOptionsIsh = requires (T v) {
+    v.optimizationLevel;
+    v.debugLevel;
+    v.typeInfoLevel;
+    v.coverageLevel;
+    v.userdataTypes;
+};
 }
 #endif

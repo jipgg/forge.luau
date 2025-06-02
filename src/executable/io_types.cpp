@@ -171,6 +171,33 @@ TYPE_CONFIG (FileWriter) {
     .index = Properties<FileWriter>::index,
     .newindex = Properties<FileWriter>::newindex,
 };
+TYPE_CONFIG (FileReader) {
+    .type = "filereader",
+    .namecall = [](lua_State* L) -> int {
+        auto& self = Type<FileReader>::to(L, 1);
+        auto const [atom, name] = lua::namecall_atom<NamedAtom>(L);
+        if (atom == NamedAtom::close) {
+            if (lua_isnoneornil(L, 2)) {
+                self.close();
+                return lua::none;
+            } else {
+                lua_pushvalue(L, 2);
+                lua_pushvalue(L, 1);
+                auto return_values = *lua::pcall(L, 1).transform([&] {
+                    return lua::push(L, true);
+                }).transform_error([&] (auto const& e) {
+                    return lua::push_tuple(L, lua::nil, e);
+                });
+                self.close();
+                return return_values;
+            }
+        }
+        auto ref = Reader{self};
+        auto pushed = reader_namecall(L, ref, atom);
+        if (not pushed) luaL_errorL(L, "invalid namecall '%s'.", name);
+        return *pushed;
+    }
+};
 TYPE_CONFIG (Reader) {
     .type = "reader",
     .namecall = [](lua_State* L) -> int {
@@ -179,5 +206,5 @@ TYPE_CONFIG (Reader) {
         auto pushed = reader_namecall(L, self, atom);
         if (not pushed) luaL_errorL(L, "invalid namecall '%s'.", name);
         return *pushed;
-    },
+    }
 };

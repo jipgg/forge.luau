@@ -14,11 +14,11 @@ auto push_path(lua_State* L, Path const& path) -> int {
 auto test_namecall_path(lua_State* L, Path& self, int atom)-> std::optional<int> {
     using named = NamedAtom;
     switch (static_cast<named>(atom)) {
-        case named::subpaths:
+        case named::children:
             return push_directory_iterator(L, self, luaL_optboolean(L, 2, false));
         case named::string:
             return lua::push(L, self.string());
-        case named::subpath:
+        case named::child:
             return Type<Path>::push(L, self / to_path(L, 2));
         case named::isabsolute:
             return lua::push(L, self.is_absolute());
@@ -33,29 +33,29 @@ auto test_namecall_path(lua_State* L, Path& self, int atom)-> std::optional<int>
 };
 
 static auto init_properties() {
-    using P = Properties<Path>;
-    P::add("ext", [](auto L, auto const& self) {
+    using props = Properties<Path>;
+    props::add("extension", [](auto L, auto const& self) {
         return lua::push(L, self.extension().string());
     }, [](auto L, Path& self) {
         self.replace_extension(luaL_checkstring(L, 2));
     });
-    P::add("name", [](auto L, auto const& self) {
+    props::add("filename", [](auto L, auto const& self) {
         return lua::push(L, self.filename().string());
     }, [](auto L, auto& self) {
         self.replace_filename(luaL_checkstring(L, 2));
     });
-    P::add("stem", [](auto L, auto const& self) {
+    props::add("stem", [](auto L, auto const& self) {
         return lua::push(L, self.stem().string());
     }, [](auto L, auto& self){
         auto ext = self.extension().string();
         self.replace_filename(luaL_checkstring(L, 2) + ext);
     });
-    P::add("dir", [](auto L, Path const& self) {
+    props::add("parent", [](auto L, Path const& self) {
         return Type<Path>::push(L, self.parent_path());
     }, [](auto L, Path& self) {
         self = to_path(L, 2) / self.filename();
     });
-    P::add("type", [](auto L, Path const& self) {
+    props::add("type", [](auto L, Path const& self) {
         if (fs::is_directory(self)) return lua::push(L, "directory");
         else if (fs::is_regular_file(self)) return lua::push(L, "file");
         else if (fs::is_symlink(self)) return lua::push(L, "symlink");

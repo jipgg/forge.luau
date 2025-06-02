@@ -7,8 +7,10 @@
 #include <filesystem>
 #include <expected>
 #include "common.hpp"
+#include "lua.h"
 #include "util/comptime.hpp"
 #include "NamedAtom.hpp"
+#include "util/lua.hpp"
 namespace fs = std::filesystem;
 namespace rgs = std::ranges;
 using std::string;
@@ -83,11 +85,20 @@ auto init_state(const char* libname) -> lua::StateOwner {
     Type<FileWriter>::setup(L);
     Type<HttpClient>::setup(L);
     Type<Reader>::setup(L);
-    open_fslib(L);
-    open_iolib(L);
-    open_oslib(L);
-    open_httplib(L);
-    open_jsonlib(L);
+    Type<FileReader>::setup(L);
+    lua_newtable(L);
+    setfield<loader::filesystem>(L, -2, "fs");
+    setfield<loader::http>(L, -2, "http");
+    setfield<loader::json>(L, -2, "json");
+    setfield<loader::io>(L, -2, "io");
+    setfield<loader::process>(L, -2, "proc");
+    //loader::process(L, -2);
+    lua_setglobal(L, "forge");
+    // open_fslib(L);
+    // open_iolib(L);
+    // open_oslib(L);
+    // open_httplib(L);
+    // open_jsonlib(L);
     luaL_sandbox(L);
     return state;
 }

@@ -35,17 +35,40 @@ static auto filewriter_create(lua_State* L) -> int {
     auto append_mode = luaL_optboolean(L, 2, false);
     return push_open_filewriter(L, path, append_mode);
 }
-
-void open_iolib(lua_State* L) {
-    constexpr auto lib = std::to_array<luaL_Reg>({
-        {"filewriter", filewriter_create},
-    });
-    push_library(L, lib);
-    Type<Writer>::make(L, std::cout);
-    lua_setfield(L, -2, "stdout");
-    Type<Writer>::make(L, std::cerr);
-    lua_setfield(L, -2, "stderr");
-    Type<Reader>::make(L, std::cin);
-    lua_setfield(L, -2, "stdin");
-    lua_setglobal(L, "io");
+static auto filereader_create(lua_State* L) -> int {
+    auto path = to_path(L, 1);
+    check_open(L, path, Type<FileReader>::make(L, std::ifstream{path}));
+    return 1;
 }
+
+void loader::io(lua_State* L, int idx) {
+    lua::set_functions(L, idx, std::to_array<luaL_Reg>({
+        {"filewriter", filewriter_create},
+        {"filereader", filereader_create},
+    }));
+    Type<Writer>::make(L, std::cout);
+    lua_setfield(L, idx, "stdout");
+    Type<Writer>::make(L, std::cerr);
+    lua_setfield(L, idx, "stderr");
+    Type<Reader>::make(L, std::cin);
+    lua_setfield(L, idx, "stdin");
+}
+
+// void push_iolib(lua_State* L) {
+//     constexpr auto lib = std::to_array<luaL_Reg>({
+//         {"filewriter", filewriter_create},
+//         {"filereader", filereader_create},
+//     });
+//     lua::push_library(L, lib);
+//     Type<Writer>::make(L, std::cout);
+//     lua_setfield(L, -2, "stdout");
+//     Type<Writer>::make(L, std::cerr);
+//     lua_setfield(L, -2, "stderr");
+//     Type<Reader>::make(L, std::cin);
+//     lua_setfield(L, -2, "stdin");
+// }
+//
+// void open_iolib(lua_State* L) {
+//     push_iolib(L);
+//     lua_setglobal(L, "io");
+// }

@@ -1,5 +1,5 @@
 return {
     luau_lsp = {
-        definitions = {"etc/plus.d.luau"},
+        definitions = {"etc/forge.d.luau"},
     }
 }

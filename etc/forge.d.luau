@@ -3,16 +3,16 @@ type filetype = "directory" | "symlink" | "file" | "unknown"
 type anypath = path | string
 type iterator<T, U = nil> = () -> (T?, U)
 declare class path
-    ext: string
-    name: string
-    dir: path
+    extension: string
+    filename: string
+    parent: path
     stem: string
     type: filetype
     function string(self): string
     function generic(self): string
     function isabsolute(self): boolean
     function isrelative(self): boolean
-    function subpath(self, subpath: anypath): path
+    function child(self, subpath: anypath): path
     function clone(self): path
     function subpaths(self, recursive: boolean?): iterator<path>
     function __div(self, other: anypath): path
@@ -63,7 +63,16 @@ declare class httpclient
     function get(self, path: string): (number?, string?)
     function post(self, path: string, body: string): (number?, string?)
 end
-type fslib = {
+type pathtype_t = {
+    currdir: () -> path,
+    tmpdir: () -> path,
+    homedir: () -> path,
+}
+type pathtype_mt = {
+    __call: (pathtype, path: string) -> path,
+}
+type pathtype = typeof(setmetatable({}::pathtype_t, {}::pathtype_mt))
+type filesystemlib = {
     rename: (from: anypath, to: anypath) -> (),
     remove: (path: anypath, all: boolean?) -> boolean,
     exists: (path: anypath) -> boolean,
@@ -81,7 +90,8 @@ type fslib = {
     getenv: (var: string) -> path?,
     readsym: (symlink: anypath) -> path,
     homedir: () -> path,
-    path: ((path: string) -> path),
+    path: pathtype,
+    --path: ((path: string) -> path),
 }
 type iolib = {
     stdin: reader,
@@ -97,20 +107,19 @@ type httplib = {
     post: (host: string, path: string, body: string) -> (number?, string),
     client: ((host: string) -> httpclient),
 }
-type oslib = {
-    is: ('linux' | 'windows' | 'macos') -> boolean,
-    execute: (command: string) -> number,
-    getenv: (env: string) -> string?,
-    args: () -> iterator<string>,
+type processlib = {
+    system: (command: string) -> number,
     sleep: (seconds: number) -> (), 
 }
 type jsonlib = {
     encode: <T>(t: T) -> string,
     decode: <T>(src: string) -> T,
 }
-declare io: iolib
-declare os: typeof(os) & oslib
-declare fs: fslib
-declare http: httplib
-declare json: jsonlib
 declare collectgarbage: (('collect') -> ()) & (('count') -> number)
+declare forge: {
+    fs: filesystemlib,
+    proc: processlib,
+    io: iolib,
+    http: httplib,
+    json: jsonlib,
+}

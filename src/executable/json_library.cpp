@@ -122,11 +122,17 @@ static auto decode(lua_State* L) -> int {
 static auto encode(lua_State* L) -> int {
     return lua::push(L, table_to_json(L, 1).dump());
 }
-void open_jsonlib(lua_State* L) {
-    const luaL_Reg json[] = {
+void loader::json(lua_State* L, int idx) {
+    lua::set_functions(L, idx, std::to_array<luaL_Reg>({
         {"encode", encode},
         {"decode", decode},
-        {nullptr, nullptr}
-    };
-    luaL_register(L, "json", json);
+    }));
 }
+// void open_jsonlib(lua_State* L) {
+//     const luaL_Reg json[] = {
+//         {"encode", encode},
+//         {"decode", decode},
+//         {nullptr, nullptr}
+//     };
+//     luaL_register(L, "json", json);
+// }

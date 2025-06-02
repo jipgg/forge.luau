@@ -221,8 +221,8 @@ auto push_directory_iterator(lua_State* L, Path const& directory, bool recursive
     return 1;
 }
 
-void open_fslib(lua_State* L) {
-    const luaL_Reg filesystem[] = {
+void loader::filesystem(lua_State* L, int idx) {
+    lua::set_functions(L, idx, std::to_array<luaL_Reg>({
         {"remove", remove},
         {"rename", rename},
         {"newdir", newdir},
@@ -240,8 +240,30 @@ void open_fslib(lua_State* L) {
         {"getenv", getenv},
         {"readsym", readsym},
         {"homedir", homedir},
-        {nullptr, nullptr}
-    };
-    luaL_register(L, "fs", filesystem);
+    }));
 }
 
+// void open_fslib(lua_State* L) {
+//     const luaL_Reg filesystem[] = {
+//         {"remove", remove},
+//         {"rename", rename},
+//         {"newdir", newdir},
+//         {"subpaths", subpaths},
+//         {"exists", exists},
+//         {"currdir", currdir},
+//         {"type", type},
+//         {"tmpdir", tmpdir},
+//         {"equivalent", equivalent},
+//         {"canonical", canonical},
+//         {"absolute", absolute},
+//         {"copy", copy},
+//         {"newsym", newsym},
+//         {"path", path_create},
+//         {"getenv", getenv},
+//         {"readsym", readsym},
+//         {"homedir", homedir},
+//         {nullptr, nullptr}
+//     };
+//     luaL_register(L, "fs", filesystem);
+// }
+//
