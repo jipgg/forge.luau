@@ -1,5 +1,6 @@
 #include "common.hpp"
 #include "NamedAtom.hpp"
+#include "util/lua.hpp"
 #include "util/type_utility.hpp"
 #include <bit>
 
@@ -27,22 +28,19 @@ static auto write_number_raw(Writer& to, lua_State* L, int idx = 2) -> size_t {
 static auto reader_namecall(lua_State *L, Reader& self, NamedAtom atom) -> std::optional<int> {
     using named = NamedAtom;
     switch (static_cast<named>(atom)) {
-        case named::readu8:
-            return read<u8>(self, L);
-        case named::readi8:
-            return read<i8>(self, L);
-        case named::readu16:
-            return read<u16>(self, L);
-        case named::readi16:
-            return read<i16>(self, L);
-        case named::readu32:
-            return read<u32>(self, L);
-        case named::readi32:
-            return read<i32>(self, L);
-        case named::readf32:
-            return read<f32>(self, L);
-        case named::readf64:
-            return read<f64>(self, L);
+        case named::readu8: return read<u8>(self, L);
+        case named::readi8: return read<i8>(self, L);
+        case named::readu16: return read<u16>(self, L);
+        case named::readi16: return read<i16>(self, L);
+        case named::readu32: return read<u32>(self, L);
+        case named::readi32: return read<i32>(self, L);
+        case named::readf32: return read<f32>(self, L);
+        case named::readf64: return read<f64>(self, L);
+        case named::scan: {
+            std::string str{};
+            *self >> str; 
+            return lua::push(L, str);
+        }
         case named::lines: {
             Type<Reader>::make(L, Reader{*self});
             lua_pushcclosure(L, line_iterator_closure, "line_iterator", 1);

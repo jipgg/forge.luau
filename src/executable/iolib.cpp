@@ -42,8 +42,10 @@ void open_iolib(lua_State* L) {
     });
     push_library(L, lib);
     Type<Writer>::make(L, std::cout);
-    lua_setfield(L, -2, "cout");
+    lua_setfield(L, -2, "stdout");
     Type<Writer>::make(L, std::cerr);
-    lua_setfield(L, -2, "cerr");
+    lua_setfield(L, -2, "stderr");
+    Type<Reader>::make(L, std::cin);
+    lua_setfield(L, -2, "stdin");
     lua_setglobal(L, "io");
 }

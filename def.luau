@@ -1,15 +1,6 @@
-local result = require('@pls/result')
-local client = http.client("http://httpbin.org")
-fs.path("eeeeeeeeeeeee"):subpath("eeee"):subpath("eeeeee"):generic()
-print("Performing GET request...")
-local status, body = client:get("/get")
-if status then
-    io.cout(`GET: {status}, {body}`)
-else
-    io.cout("GET Request Error:", body)
-end
-fs.path("eeee")
-local e = fs.path("eee") / "eeee"
+print(typeof(io.stdin))
+local input = io.stdin:scan()
+print(`input is {input}`)
 
 -- local stack = require('@pls/stack')
 -- print("yoo")

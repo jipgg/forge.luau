@@ -20,6 +20,7 @@ declare class path
 end
 declare class reader
     function read(self, count: number?): string
+    function scan(self): string
     function lines(self): iterator<string>
     function readu8(self): number
     function readi8(self): number
@@ -83,9 +84,9 @@ type fslib = {
     path: ((path: string) -> path),
 }
 type iolib = {
-    cin: reader,
-    cout: writer,
-    cerr: writer,
+    stdin: reader,
+    stdout: writer,
+    stderr: writer,
     readfile: (file: anypath) -> string?,
     writefile: (file: anypath, contents: string) -> boolean,
     filewriter: ((file: anypath, append: boolean?) -> filewriter),
@@ -111,6 +112,5 @@ declare io: iolib
 declare os: typeof(os) & oslib
 declare fs: fslib
 declare http: httplib
-declare json: jsonlib
 declare json: jsonlib
 declare collectgarbage: (('collect') -> ()) & (('count') -> number)

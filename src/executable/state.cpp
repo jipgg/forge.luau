@@ -10,7 +10,7 @@
 #include "util/comptime.hpp"
 #include "NamedAtom.hpp"
 namespace fs = std::filesystem;
-namespace sr = std::ranges;
+namespace rgs = std::ranges;
 using std::string;
 
 static auto loadstring(lua_State* L) -> int {
@@ -41,10 +41,10 @@ static int collectgarbage(auto L) {
 static auto useratom(const char* str, size_t len) -> int16_t {
     std::string_view namecall{str, len};
     static constexpr auto info = comptime::to_array<NamedAtom>();
-    auto found = sr::find_if(info, [&namecall](auto const& e) {
+    auto found = rgs::find_if(info, [&namecall](auto const& e) {
         return e.name == namecall;
     });
-    if (found == sr::end(info)) return -1;
+    if (found == rgs::end(info)) return -1;
     return static_cast<int16_t>(found->value);
 }
 
@@ -82,6 +82,7 @@ auto init_state(const char* libname) -> lua::StateOwner {
     Type<Writer>::setup(L);
     Type<FileWriter>::setup(L);
     Type<HttpClient>::setup(L);
+    Type<Reader>::setup(L);
     open_fslib(L);
     open_iolib(L);
     open_oslib(L);

@@ -7,6 +7,8 @@ enum class NamedAtom {
     subpath,
     generic,
     read_all,
+    read,
+    scan,
     children,
     string,
     isabsolute,
