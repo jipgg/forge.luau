@@ -2,7 +2,7 @@
 #include <memory>
 #include <variant>
 
-template <class T>
+template <typename T>
 struct Interface {
     using Type = T;
     enum class Holds {

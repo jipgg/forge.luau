@@ -10,10 +10,11 @@ declare class path
     type: filetype
     absolute: path
     canonical: path
-    function string(self): string
-    function generic(self): string
-    function isabsolute(self): boolean
-    function isrelative(self): boolean
+    string: string
+    generic: string
+    native: string
+    isrelative: boolean
+    isabsolute: boolean
     function child(self, subpath: anypath): path
     function clone(self): path
     function children(self, recursive: boolean?): iterator<path>
@@ -65,10 +66,18 @@ declare class httpclient
     function get(self, path: string): (number?, string?)
     function post(self, path: string, body: string): (number?, string?)
 end
+declare class subprocess
+    function wait(self): number
+    function terminate(self): ()
+    function running(self): boolean
+    function read_stdout(self, max: number?): string
+    function read_stderr(self, max: number?): string
+end
+
 type pathtype_t = {
-    currdir: () -> path,
-    tmpdir: () -> path,
-    homedir: () -> path,
+    current: () -> path,
+    temp: () -> path,
+    home: () -> path,
 }
 type pathtype_mt = {
     __call: (pathtype, path: string) -> path,
@@ -105,20 +114,21 @@ type iolib = {
     filereader: ((file: anypath) -> filereader),
 }
 type httplib = {
-    get: (host: string, path: string) -> (number?, string),
-    post: (host: string, path: string, body: string) -> (number?, string),
+    get: <T>(host: string, path: string) -> (number?, T),
+    post: <T>(host: string, path: string, body: unknown) -> (number?, T),
     client: ((host: string) -> httpclient),
 }
 type processlib = {
     system: (command: string) -> number,
     sleep: (seconds: number) -> (), 
+    subprocess: (...string) -> subprocess, 
 }
 type jsonlib = {
     encode: <T>(t: T) -> string,
     decode: <T>(src: string) -> T,
 }
 declare collectgarbage: (('collect') -> ()) & (('count') -> number)
-declare forge: {
+declare std: {
     fs: filesystemlib,
     proc: processlib,
     io: iolib,

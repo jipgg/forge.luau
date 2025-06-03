@@ -9,12 +9,12 @@
 #include <type_traits>
 
 namespace comptime {
-template<class T, T Val>
+template<typename T, T Val>
 struct Value {
     static const constexpr auto value = Val;
     constexpr operator T() const {return Val;}
 };
-template <class T, std::size_t... Indices>
+template <typename T, std::size_t... Indices>
 constexpr void unroll_for(T fn, std::index_sequence<Indices...>) {
   (fn(Value<std::size_t, Indices>{}), ...);
 }
@@ -22,12 +22,12 @@ template <std::size_t Count, typename Func>
 constexpr void unroll_for(Func fn) {
   unroll_for(fn, std::make_index_sequence<Count>());
 }
-template <class type>
+template <typename type>
 concept SentinelEnum = requires {
     std::is_enum_v<type>;
     type::comptime_sentinel_keyword;
 };
-template <class from, class to>
+template <typename from, typename to>
 concept CastableTo = requires {
     static_cast<to>(from{});
 };

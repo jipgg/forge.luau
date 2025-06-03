@@ -86,6 +86,7 @@ auto init_state(const char* libname) -> lua::StateOwner {
     Type<HttpClient>::setup(L);
     Type<Reader>::setup(L);
     Type<FileReader>::setup(L);
+    //Type<Subprocess>::setup(L);
     lua_newtable(L);
     setfield<loader::filesystem>(L, -2, "fs");
     setfield<loader::http>(L, -2, "http");
@@ -93,7 +94,7 @@ auto init_state(const char* libname) -> lua::StateOwner {
     setfield<loader::io>(L, -2, "io");
     setfield<loader::process>(L, -2, "proc");
     //loader::process(L, -2);
-    lua_setglobal(L, "forge");
+    lua_setglobal(L, "std");
     // open_fslib(L);
     // open_iolib(L);
     // open_oslib(L);

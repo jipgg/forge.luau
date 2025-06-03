@@ -5,8 +5,8 @@
 #include "util/ArgsWrapper.hpp"
 namespace vws = std::views;
 namespace fs = std::filesystem;
+namespace rgs = std::ranges;
 using namespace std::string_view_literals;
-
 
 static auto run_main_entry_script(ArgsWrapper const& args, lua_State* L, std::string_view script) -> void {
 	std::println("{}", fs::current_path().string());
@@ -22,6 +22,12 @@ static auto run_main_entry_script(ArgsWrapper const& args, lua_State* L, std::st
         std::println("\033[35mError: {}\033[0m", luaL_checkstring(*state, -1));
     }
 }
+template <typename T>
+constexpr auto as() {
+    return vws::transform([](auto&& v) -> T {
+        return static_cast<T>(std::forward<decltype(v)>(v));
+    });
+}
 
 auto main(int argc, char** argv) -> int {
     auto args = ArgsWrapper{argc, argv};
@@ -30,6 +36,7 @@ auto main(int argc, char** argv) -> int {
     auto scripts = vws::filter([](std::string_view e) {
         return e.ends_with(".luau");
     });
+    auto args_sv = args.view() | as<std::string_view>();
     for (auto script : args.view() | scripts) {
         constexpr auto wildcard = "*.luau"sv;
         if (script.ends_with(wildcard)) {
@@ -45,5 +52,6 @@ auto main(int argc, char** argv) -> int {
             run_main_entry_script(args, L, script);
         }
     }
+    //std::system("pause");
     return 0;
 }

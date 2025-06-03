@@ -8,7 +8,7 @@ inline int new_tag() {
     static int tag{};
     return ++tag;
 }
-template<class T>
+template<typename T>
 constexpr void default_destructor(lua_State* L, void* userdata) {
     static_cast<T*>(userdata)->~T();
 }
@@ -27,8 +27,9 @@ struct TypeConfig {
     auto tname() const -> const char* {
         return type.c_str();
     }
+    lua_Destructor on_destroy = nullptr;
 };
-template <class T, lua_Destructor Dtor = detail::default_destructor<T>>
+template <typename T>
 struct Type {
     static const TypeConfig config;
     using Self = T;
@@ -50,12 +51,15 @@ struct Type {
             init_method("__div", config.div);
             lua_pushstring(L, config.tname());
             lua_setfield(L, -2, "__type");
-            lua_setuserdatadtor(L, config.tag, Dtor);
+            lua_setuserdatadtor(L, config.tag, [](lua_State* L, void* userdata) {
+                if (config.on_destroy) config.on_destroy(L, userdata);
+                detail::default_destructor<T>(L, userdata);
+            });
         }
         lua_pop(L, 1);
         return init;
     }
-    template<class ...V>
+    template<typename ...V>
     requires std::constructible_from<T, V&&...>
     static auto make(lua_State* L, V&&...args) -> T& {
         auto p = static_cast<T*>(lua_newuserdatatagged(L, sizeof(T), config.tag));
@@ -92,7 +96,7 @@ struct Type {
         return v ? *v : value;
     }
 };
-template <class T>
+template <typename T>
 struct Properties {
     using Setter = std::function<void(lua_State*, T&)>;
     using Getter = std::function<int(lua_State*, T const&)>;

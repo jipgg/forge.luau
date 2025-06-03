@@ -110,7 +110,7 @@ constexpr auto make_buffer(State L, T&& range) -> std::span<std::ranges::range_v
     std::ranges::copy(range, span.begin());
     return span;
 }
-template<class T = char>
+template<typename T = char>
 constexpr auto make_buffer(State L, size_t size) -> std::span<T> {
     auto data = static_cast<T*>(lua_newbuffer(L, size * sizeof(T)));
     return {data, data + size};
@@ -134,6 +134,13 @@ inline auto push(State L, std::string const& v) -> int {
     lua_pushstring(L, v.c_str());
     return 1;
 }
+inline auto push(State L, std::wstring_view sv) -> int {
+    auto str = sv
+        | std::views::transform([](wchar_t e) {return static_cast<char>(e);})
+        | std::ranges::to<std::string>();
+    lua_pushstring(L, str.c_str());
+    return 1;
+}
 inline auto push(State L, ::lua::Nil const& nil) -> int {
     lua_pushnil(L);
     return 1;
@@ -154,16 +161,16 @@ inline auto push(State L, int v) -> int {
     lua_pushinteger(L, v);
     return 1;
 }
-template <class T>
+template<typename T>
 concept CanPush = requires (State L, T v) {
     ::lua::push(L, v);
 };
-template <CanPush ...V>
+template<CanPush ...V>
 constexpr auto push_tuple(State L, V&&...args) -> int {
     (push(L, std::forward<V>(args)),...);
     return sizeof...(args);
 }
-template <class T, class U>
+template<class T, class U>
 concept CastableTo = requires {
     static_cast<T>(U{});
 };
@@ -173,7 +180,7 @@ constexpr auto namecall_atom(State L) -> std::pair<T, const char*> {
     auto name = lua_namecallatom(L, &atom);
     return {static_cast<T>(atom), name};
 }
-template <class T,  class ...V>
+template <typename T,  typename ...V>
 requires std::constructible_from<T, V&&...>
 constexpr auto make_userdata(State L, V&&...args) -> T& {
     auto dtor = [](void* ud) {
@@ -183,11 +190,11 @@ constexpr auto make_userdata(State L, V&&...args) -> T& {
     std::construct_at(ud, std::forward<V>(args)...);
     return *ud;
 }
-template <class T>
+template <typename T>
 constexpr auto new_userdata(State L, T&& userdata) -> T& {
     return make_userdata<T>(L, std::forward<T>(userdata));
 }
-template <class T>
+template <typename T>
 constexpr auto to_userdata(State L, int idx) -> T& {
     return *static_cast<T*>(lua_touserdata(L, idx));
 }
@@ -223,7 +230,7 @@ inline void push_function_table(lua_State* L, std::span<const luaL_Reg> fns) {
     lua_newtable(L);
     set_functions(L, -2, fns);
 }
-template <class T>
+template <typename T>
 concept CompileOptionsIsh = requires (T v) {
     v.optimizationLevel;
     v.debugLevel;

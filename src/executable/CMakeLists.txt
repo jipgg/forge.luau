@@ -10,6 +10,7 @@ add_executable(executable
     io_types.cpp
     filesystem_types.cpp
     http_types.cpp
+    process_types.cpp
     ${CMAKE_SOURCE_DIR}/extern/luau/CLI/src/ReplRequirer.cpp
     ${CMAKE_SOURCE_DIR}/extern/luau/CLI/src/RequirerUtils.cpp
     ${CMAKE_SOURCE_DIR}/extern/luau/CLI/src/Coverage.cpp
@@ -28,5 +29,7 @@ target_link_libraries(executable PRIVATE
     httplib
     nlohmann_json::nlohmann_json
 )
-target_include_directories(executable PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(executable PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
 set_target_properties(executable PROPERTIES OUTPUT_NAME ${PROJECT_NAME})

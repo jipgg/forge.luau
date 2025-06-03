@@ -182,11 +182,11 @@ static auto homedir(auto L) -> int {
     if (not home) luaL_errorL(L, "%s", home.error().c_str());
     return push_path(L, home.value());
 }
-template <class Iterator>
+template <typename T>
 static auto directory_iterator_closure(auto L) -> int {
-    auto& it = lua::to_userdata<Iterator>(L, lua_upvalueindex(1));
+    auto& it = lua::to_userdata<T>(L, lua_upvalueindex(1));
     auto& entry = Type<Path>::to(L, lua_upvalueindex(2));
-    const Iterator end{};
+    const T end{};
     if (it != end) {
         const std::filesystem::directory_entry& e = *it;
         entry = e.path();
@@ -236,49 +236,10 @@ void loader::filesystem(lua_State* L, int idx) {
         {"absolute", absolute},
         {"copy", copy},
         {"newsym", newsym},
-        //{"path", path_create},
+        {"path", path_create},
         {"getenv", getenv},
         {"readsym", readsym},
         {"homedir", homedir},
     }));
-    lua_newtable(L);
-    lua::set_functions(L, -2, std::to_array<luaL_Reg>({
-        {"home", homedir},
-        {"temp", tmpdir},
-        {"current", currdir},
-    }));
-    if (luaL_newmetatable(L, "path_type")) {
-        lua::set_functions(L, -2, std::to_array<luaL_Reg>({
-            {"__call", [](lua_State* L) -> int {
-                return push_path(L, luaL_checkstring(L, 2));
-            }},
-        }));
-    }
-    lua_setmetatable(L, -2);
-    lua_setfield(L, -2, "path");
 }
 
-// void open_fslib(lua_State* L) {
-//     const luaL_Reg filesystem[] = {
-//         {"remove", remove},
-//         {"rename", rename},
-//         {"newdir", newdir},
-//         {"subpaths", subpaths},
-//         {"exists", exists},
-//         {"currdir", currdir},
-//         {"type", type},
-//         {"tmpdir", tmpdir},
-//         {"equivalent", equivalent},
-//         {"canonical", canonical},
-//         {"absolute", absolute},
-//         {"copy", copy},
-//         {"newsym", newsym},
-//         {"path", path_create},
-//         {"getenv", getenv},
-//         {"readsym", readsym},
-//         {"homedir", homedir},
-//         {nullptr, nullptr}
-//     };
-//     luaL_register(L, "fs", filesystem);
-// }
-//

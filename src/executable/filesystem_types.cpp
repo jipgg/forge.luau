@@ -3,7 +3,11 @@
 #include <filesystem>
 #include "NamedAtom.hpp"
 #include "util/type_utility.hpp"
+#include <string_view>
+#include <ranges>
 namespace fs = std::filesystem;
+namespace vws = std::views;
+namespace rgs = std::ranges;
 
 auto to_path(lua_State* L, int idx) -> Path {
     return Type<Path>::to_or(L, idx, [&]{return luaL_checkstring(L, idx);});
@@ -72,6 +76,21 @@ static auto init_properties() {
     });
     props::add("absolute", [](auto L, Path const& self) {
         return Type<Path>::push(L, fs::absolute(self));
+    });
+    props::add("string", [](auto L, Path const& self) {
+        return lua::push(L, self.string());
+    });
+    props::add("generic", [](auto L, Path const& self) {
+        return lua::push(L, self.generic_string());
+    });
+    props::add("native", [](auto L, Path const& self) {
+        return lua::push(L, self.native());
+    });
+    props::add("isrelative", [](auto L, Path const& self) {
+        return lua::push(L, self.is_relative());
+    });
+    props::add("isabsolute", [](auto L, Path const& self) {
+        return lua::push(L, self.is_absolute());
     });
 }
 TYPE_CONFIG (Path) {

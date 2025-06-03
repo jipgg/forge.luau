@@ -206,5 +206,5 @@ TYPE_CONFIG (Reader) {
         auto pushed = reader_namecall(L, self, atom);
         if (not pushed) luaL_errorL(L, "invalid namecall '%s'.", name);
         return *pushed;
-    }
+    },
 };

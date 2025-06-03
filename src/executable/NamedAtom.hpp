@@ -65,5 +65,12 @@ enum class NamedAtom {
     tab,
     esc,
     style,
+    alive,
+    running,
+    read_stdout,
+    read_stderr,
+    terminate,
+    join,
+    wait,
     comptime_sentinel_keyword
 };
