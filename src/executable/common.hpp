@@ -33,6 +33,7 @@ using Reader = Interface<std::istream>;
 using FileWriter = std::ofstream;
 using FileReader = std::ifstream;
 using HttpClient = httplib::Client;
+using HttpResponse = httplib::Response;
 //libraries
 using Loader = void(*)(lua_State*L, int idx);
 namespace loader {

@@ -4,7 +4,7 @@
 
 using json_value_t = decltype(nlohmann::json::parse(""));
 
-static auto decode(lua_State* L) -> int {
+static auto parse(lua_State* L) -> int {
     try {
         auto parsed = nlohmann::json::parse(luaL_checkstring(L, 1));
         util::push_value(L, parsed);
@@ -13,12 +13,12 @@ static auto decode(lua_State* L) -> int {
         luaL_errorL(L, "%s", e.what());
     }
 }
-static auto encode(lua_State* L) -> int {
+static auto tostring(lua_State* L) -> int {
     return lua::push(L, util::table_to_json(L, 1).dump());
 }
 void loader::json(lua_State* L, int idx) {
     lua::set_functions(L, idx, std::to_array<luaL_Reg>({
-        {"encode", encode},
-        {"decode", decode},
+        {"tostring", tostring},
+        {"parse", parse},
     }));
 }

@@ -170,6 +170,14 @@ constexpr auto push_tuple(State L, V&&...args) -> int {
     (push(L, std::forward<V>(args)),...);
     return sizeof...(args);
 }
+template<CanPush T>
+constexpr void push_field(State L, const char* name, T&& value, int idx = -2) {
+    push(L, std::forward<T>(value));
+    lua_setfield(L, -2, name);
+}
+constexpr auto push_field(State L, const std::string& name, auto&& value, int idx = -2) {
+    return push_field(L, name.c_str(), std::forward<decltype(value)>(value));
+}
 template<class T, class U>
 concept CastableTo = requires {
     static_cast<T>(U{});

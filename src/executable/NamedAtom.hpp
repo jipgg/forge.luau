@@ -1,7 +1,9 @@
 #pragma once
 enum class NamedAtom {
+    stop,
     get,
     post,
+    headers,
     status,
     subpaths,
     subpath,

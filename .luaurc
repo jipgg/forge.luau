@@ -1,6 +1,7 @@
 {
     "languageMode": "strict",
     "aliases": {
+        "forge": "./etc/definitions",
         "pls": "./src/luau",
         "test": "./test"
     }
