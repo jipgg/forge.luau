@@ -1,13 +1,13 @@
-type copyoptions = "recursive" | "update existing" | "skip existing" | "create symlinks" | "copy symlinks" | "overwrite existing" | "directories only" | "create hard links" | "none"
-type filetype = "directory" | "symlink" | "file" | "unknown"
-type anypath = path | string
+type fs_copyoptions = "recursive" | "update existing" | "skip existing" | "create symlinks" | "copy symlinks" | "overwrite existing" | "directories only" | "create hard links" | "none"
+type fs_filetype = "directory" | "symlink" | "file" | "unknown"
+type path_u = path | string
 type iterator<T, U = nil> = () -> (T?, U)
-export type path = {
+type path = {
     read extension: string,
     read filename: string,
     read parent: path,
     read stem: string,
-    read filetype: filetype,
+    read filetype: fs_filetype,
     read absolute: path,
     read canonical: path,
     read string: string,
@@ -15,11 +15,11 @@ export type path = {
     read native: string,
     read isrelative: boolean,
     read isabsolute: boolean,
-    child: (self: path, subpath: anypath) -> path,
+    child: (self: path, subpath: path_u) -> path,
     clone: (self: path) -> path,
     children: (self: path, recursive: boolean?) -> iterator<path>
 }
-export type reader = {
+type reader = {
     read: <Reader>(self: Reader, count: number?) -> string,
     scan: <Reader>(self: Reader) -> string,
     lines: <Reader>(self: Reader) -> (() -> string?),
@@ -33,7 +33,7 @@ export type reader = {
     readf64: <Reader>(self: Reader) -> number,
     flush: <Reader>(self: Reader) -> Reader,
 }
-export type writer = {
+type writer = {
     write: <Writer>(self: Writer, data: string | buffer) -> Writer,
     writeu8: <Writer>(self: Writer, v: number) -> Writer,
     writei8: <Writer>(self: Writer, v: number) -> Writer,
@@ -47,24 +47,29 @@ export type writer = {
     seek: <Writer>(self: Writer, pos: number, base: "beg" | "cur" | "end" | nil) -> Writer,
     tell: <Writer>(self: Writer) -> number,
 }
-export type filereader = reader & {
+type filereader = reader & {
     lines: (self: filereader, autoclose: boolean?) -> (() -> string?),
     read isopen: boolean,
     close: ((self: filereader, before: ((reader) -> ())?) -> ()),
 }
-export type filewriter = writer & {
+type filewriter = writer & {
     read isopen: boolean,
     close: ((self: filewriter, before: ((writer) -> ())?) -> ()),
 }
-export type httpresponse = {
+type lookup = setmetatable<{}, {
+    __index: (self: lookup, key: string) -> string,
+}>
+type httpresponse = {
     read status: number,
     read body: string,
     read location: string,
     read version: string,
     read reason: string,
-    headers: (self: httpresponse) -> {[string]: string},
+    read headers: lookup,
+    getheaders: (self: httpresponse) -> {[string]: string},
+    getheadervalue: (self: httpresponse, key: string, default: string?) -> string,
 }
-export type httpclient = {
+type httpclient = {
     read host: string,
     read isvalid: boolean,
     read port: number,
@@ -79,53 +84,63 @@ export type httpclient = {
     get: (self: httpclient, path: string) -> (httpresponse?, string),
     --post: (self: httpclient, path: string, body: unknown) -> (httpresponse?, string),
 }
-type filesystemlibrary = {
-    rename: (from: anypath, to: anypath) -> (),
-    remove: (path: anypath, all: boolean?) -> boolean,
-    exists: (path: anypath) -> boolean,
-    equivalent: (a: anypath, b: anypath) -> boolean,
-    newdir: (path: anypath, recursive: boolean?) -> boolean,
-    subpaths: (dir: anypath, recursive: boolean?) -> iterator<path>,
+type filesystem = {
+    rename: (from: path_u, to: path_u) -> (),
+    remove: (path: path_u, all: boolean?) -> boolean,
+    exists: (path: path_u) -> boolean,
+    equivalent: (a: path_u, b: path_u) -> boolean,
+    newdir: (path: path_u, recursive: boolean?) -> boolean,
+    subpaths: (dir: path_u, recursive: boolean?) -> iterator<path>,
     currdir: () -> path,
-    type: (path: anypath) -> filetype,
+    type: (path: path_u) -> fs_filetype,
     tmpdir: () -> path,
-    canonical: (path: anypath, weakly: boolean?) -> path,
-    absolute: (path: anypath) -> path,
-    copy: (from: anypath, to: anypath, opts: copyoptions?) -> (),
-    newsym: (to: anypath, new_symlink: anypath) -> (),
-    newfile: (path: anypath, text: string?, force: boolean?) -> (),
+    canonical: (path: path_u, weakly: boolean?) -> path,
+    absolute: (path: path_u) -> path,
+    copy: (from: path_u, to: path_u, opts: fs_copyoptions?) -> (),
+    newsym: (to: path_u, new_symlink: path_u) -> (),
+    newfile: (path: path_u, text: string?, force: boolean?) -> (),
     getenv: (var: string) -> path?,
-    readsym: (symlink: anypath) -> path,
+    readsym: (symlink: path_u) -> path,
     homedir: () -> path,
     path: ((path: string) -> path),
 }
-type iolibrary = {
+type io = {
     stdin: reader,
     stdout: writer,
     stderr: writer,
-    readfile: (file: anypath) -> string?,
-    writefile: (file: anypath, contents: string) -> boolean,
-    filewriter: ((file: anypath, append: boolean?) -> filewriter),
-    filereader: ((file: anypath) -> filereader),
+    readfile: (file: path_u) -> string?,
+    writefile: (file: path_u, contents: string) -> boolean,
+    filewriter: ((file: path_u, append: boolean?) -> filewriter),
+    filereader: ((file: path_u) -> filereader),
 }
-type httplibrary = {
+type urlinfo = {
+    scheme: string,
+    host: string,
+    port: number,
+    path: string,
+}
+type http = {
+    urlinfo: (url: string) -> urlinfo,
     get: (url: string) -> (httpresponse?, string),
     post: (url: string, args: unknown) -> (httpresponse?, string),
     client: ((host: string) -> httpclient),
 }
-type processlibrary = {
+type process = {
     system: (command: string) -> number,
     sleep: (seconds: number) -> (), 
 }
-type jsonlibrary = {
+type json = {
     tostring: <T>(t: T) -> string,
     parse: <T>(src: string) -> T,
 }
-declare collectgarbage: (('collect') -> ()) & (('count') -> number)
-declare wow: {
-    fs: filesystemlibrary,
-    proc: processlibrary,
-    io: iolibrary,
-    http: httplibrary,
-    json: jsonlibrary,
+type wow = {
+    fs: filesystem,
+    proc: process,
+    io: io,
+    http: http,
+    json: json,
 }
+type collectgarbage = (('collect') -> ()) & (('count') -> number)
+
+declare wow: wow
+declare collectgarbage: collectgarbage

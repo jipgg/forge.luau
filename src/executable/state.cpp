@@ -11,6 +11,7 @@
 #include "util/comptime.hpp"
 #include "NamedAtom.hpp"
 #include "util/lua.hpp"
+#include "util/type_utility.hpp"
 namespace fs = std::filesystem;
 namespace rgs = std::ranges;
 using std::string;
@@ -80,27 +81,20 @@ auto init_state(const char* libname) -> lua::StateOwner {
     });
     auto L = state.get();
     open_require(L);
-    Type<Path>::setup(L);
-    Type<Writer>::setup(L);
-    Type<FileWriter>::setup(L);
-    Type<HttpClient>::setup(L);
-    Type<Reader>::setup(L);
-    Type<FileReader>::setup(L);
-    Type<HttpResponse>::setup(L);
-    //Type<Subprocess>::setup(L);
+    Type<wow::fs::path_t>::setup(L);
+    Type<wow::http::response_t>::setup(L);
+    Type<wow::http::client_t>::setup(L);
+    Type<wow::io::reader_t>::setup(L);
+    Type<wow::io::writer_t>::setup(L);
+    Type<wow::io::filereader_t>::setup(L);
+    Type<wow::io::filewriter_t>::setup(L);
     lua_newtable(L);
-    setfield<loader::filesystem>(L, -2, "fs");
-    setfield<loader::http>(L, -2, "http");
-    setfield<loader::json>(L, -2, "json");
-    setfield<loader::io>(L, -2, "io");
-    setfield<loader::process>(L, -2, "proc");
-    //loader::process(L, -2);
+    setfield<wow::fs::library>(L, -2, "fs");
+    setfield<wow::http::library>(L, -2, "http");
+    setfield<wow::json::library>(L, -2, "json");
+    setfield<wow::proc::library>(L, -2, "proc");
+    setfield<wow::io::library>(L, -2, "io");
     lua_setglobal(L, "wow");
-    // open_fslib(L);
-    // open_iolib(L);
-    // open_oslib(L);
-    // open_httplib(L);
-    // open_jsonlib(L);
     luaL_sandbox(L);
     return state;
 }

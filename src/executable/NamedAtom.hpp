@@ -1,6 +1,9 @@
 #pragma once
 enum class NamedAtom {
     stop,
+    getheaders,
+    getheadervalue,
+    getheadervaluecount,
     get,
     post,
     headers,

@@ -1,11 +1,15 @@
-#include "common.hpp"
+#include "export.hpp"
 #include <httplib.h>
 #include "util/json_utility.hpp"
+#include "util/lua.hpp"
 #include <print>
 #include <expected>
 #include <regex>
+#include "util/type_utility.hpp"
+using state_t = lua_State*;
+using wow::http::client_t;
 
-struct ParsedURL {
+struct ParsedUrl {
     std::string scheme;
     std::string host;
     int port;
@@ -14,7 +18,7 @@ struct ParsedURL {
         return std::format("{}://{}:{}", scheme, host, port);
     }
 };
-static auto parse_url(const std::string &url) -> std::expected<ParsedURL, const char*> {
+static auto parse_url(const std::string &url) -> std::expected<ParsedUrl, const char*> {
     std::regex url_regex(R"((http|https)://([^:/]+)(?::(\d+))?(/.*)?)");
     std::smatch match;
     if (not std::regex_match(url, match, url_regex)) {
@@ -25,25 +29,35 @@ static auto parse_url(const std::string &url) -> std::expected<ParsedURL, const 
         ? std::stoi(match[3])
         : (scheme == "https" ? 443 : 80);
 
-    return ParsedURL {
+    return ParsedUrl {
         .scheme = scheme,
         .host = match[2],
         .port = port,
         .path = match[4].matched ? match[4].str() : "/"
     };
 }
-//library
-static auto client(lua_State* L) -> int {
-    Type<HttpClient>::make(L, luaL_checkstring(L, 1));
+static auto urlinfo(state_t L) -> int {
+    auto parsed = parse_url(luaL_checkstring(L, 1));
+    if (!parsed) return lua::none;
+    lua_newtable(L);
+    lua::set_field(L, "host", parsed->host);
+    lua::set_field(L, "port", parsed->port);
+    lua::set_field(L, "path", parsed->path);
+    lua::set_field(L, "scheme", parsed->scheme);
     return 1;
 }
+//library
 static auto get(lua_State* L) -> int {
     auto parsed = parse_url(luaL_checkstring(L, 1));
     if (not parsed) luaL_errorL(L, parsed.error());
     auto client = httplib::Client{parsed->host_port()};
     auto r = client.Get(parsed->path);
     if (!r) return lua::push_tuple(L, lua::nil, std::format("error occurred ({})", static_cast<int>(r.error())));
-    Type<HttpResponse>::make(L, std::move(*r));
+    Type<wow::http::response_t>::make(L, std::move(*r));
+    return 1;
+}
+static auto client(lua_State* L) -> int {
+    Type<wow::http::client_t>::make(L, std::move(httplib::Client(luaL_checkstring(L, 1))));
     return 1;
 }
 static auto post(lua_State* L) -> int {
@@ -76,8 +90,9 @@ static auto post(lua_State* L) -> int {
     }
     return lua::push_tuple(L, lua::nil, "request failed");
 }
-void loader::http(lua_State* L, int idx) {
+void wow::http::library(lua_State* L, int idx) {
     lua::set_functions(L, idx, std::to_array<luaL_Reg>({
+        {"urlinfo", urlinfo},
         {"client", client},
         {"get", get},
         {"post", post},

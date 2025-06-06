@@ -1,48 +1,52 @@
-#include "common.hpp"
+#include "export.hpp"
 #include "NamedAtom.hpp"
 #include "util/lua.hpp"
 #include "util/type_utility.hpp"
 #include <bit>
+using wow::io::reader_t;
+using wow::io::writer_t;
+using wow::io::filewriter_t;
+using wow::io::filereader_t;
 
-template<class T>
-static auto read(Reader& from, lua_State* L, int idx = 2) -> int {
+template<typename T>
+static auto read(reader_t& from, lua_State* L, int idx = 2) -> int {
     auto arr = std::array<char, sizeof(T)>{};
     from->read(arr.data(), arr.size());
     return lua::push(L, static_cast<double>(std::bit_cast<T>(arr)));
 };
 
 static auto line_iterator_closure(lua_State* L) -> int {
-    auto& self = Type<Reader>::to(L, lua_upvalueindex(1));
+    auto& self = Type<reader_t>::to(L, lua_upvalueindex(1));
     std::string line;
     if (std::getline(*self, line)) return lua::push(L, line);
     else return lua::none; 
 }
 
-template<class U>
-static auto write_number_raw(Writer& to, lua_State* L, int idx = 2) -> size_t {
+template<typename U>
+static auto write_number_raw(writer_t& to, lua_State* L, int idx = 2) -> size_t {
     auto data = static_cast<U>(luaL_checknumber(L, idx));
     auto bytes = std::bit_cast<std::array<uint8_t, sizeof(U)>>(data);
     for (auto byte : bytes) to->put(byte);
     return sizeof(U);
 };
-static auto reader_namecall(lua_State *L, Reader& self, NamedAtom atom) -> std::optional<int> {
+static auto reader_namecall(lua_State *L, reader_t& self, NamedAtom atom) -> std::optional<int> {
     using named = NamedAtom;
     switch (static_cast<named>(atom)) {
-        case named::readu8: return read<u8>(self, L);
-        case named::readi8: return read<i8>(self, L);
-        case named::readu16: return read<u16>(self, L);
-        case named::readi16: return read<i16>(self, L);
-        case named::readu32: return read<u32>(self, L);
-        case named::readi32: return read<i32>(self, L);
-        case named::readf32: return read<f32>(self, L);
-        case named::readf64: return read<f64>(self, L);
+        case named::readu8: return read<uint8_t>(self, L);
+        case named::readi8: return read<int8_t>(self, L);
+        case named::readu16: return read<uint16_t>(self, L);
+        case named::readi16: return read<int16_t>(self, L);
+        case named::readu32: return read<uint32_t>(self, L);
+        case named::readi32: return read<int32_t>(self, L);
+        case named::readf32: return read<float>(self, L);
+        case named::readf64: return read<double>(self, L);
         case named::scan: {
             std::string str{};
             *self >> str; 
             return lua::push(L, str);
         }
         case named::lines: {
-            Type<Reader>::make(L, Reader{*self});
+            Type<reader_t>::make(L, reader_t{*self});
             lua_pushcclosure(L, line_iterator_closure, "line_iterator", 1);
             return 1;
         }
@@ -50,7 +54,7 @@ static auto reader_namecall(lua_State *L, Reader& self, NamedAtom atom) -> std::
             return std::nullopt;
     }
 }
-auto writer_namecall(lua_State* L, Writer& self, NamedAtom atom) -> std::optional<int> {
+auto writer_namecall(lua_State* L, writer_t& self, NamedAtom atom) -> std::optional<int> {
     auto& os = *self;
     auto push_self = [&] {
         lua_pushvalue(L, 1);
@@ -115,31 +119,32 @@ auto writer_namecall(lua_State* L, Writer& self, NamedAtom atom) -> std::optiona
     }
     return std::nullopt;
 }
-TYPE_CONFIG (Writer) {
+TYPE_CONFIG (writer_t) {
     .type = "writer",
     .namecall = [](lua_State* L) -> int {
-        auto& self = Type<Writer>::to(L, 1);
+        auto& self = Type<writer_t>::to(L, 1);
         auto const [atom, name] = lua::namecall_atom<NamedAtom>(L);
         auto pushed = writer_namecall(L, self, atom);
         if (not pushed) luaL_errorL(L, "invalid namecall '%s'.", name);
         return *pushed;
     },
     .call = [](lua_State* L) {
-        auto& self = *Type<Writer>::to(L, 1).get();
+        auto& self = *Type<writer_t>::to(L, 1).get();
         self << lua::tostring_tuple(L, {.start_index = 2, .separator = ", "});
         lua_pushvalue(L, 1);
         return 1;
     },
 };
-TYPE_CONFIG (FileWriter) {
+TYPE_CONFIG (wow::io::filewriter_t) {
     .type = "filewriter",
     .on_setup = [](lua_State* L) {
-        Properties<FileWriter>::add("isopen", [](auto L, auto const& self) {
+        Properties<wow::io::filewriter_t>::add("isopen", [](auto L, auto const& self) {
             return lua::push(L, self.is_open());
         });
     },
     .namecall = [](lua_State* L) -> int {
-        auto& self = Type<FileWriter>::to(L, 1);
+        using self_t = wow::io::filewriter_t;
+        auto& self = Type<self_t>::to(L, 1);
         auto const [atom, name] = lua::namecall_atom<NamedAtom>(L);
         if (atom == NamedAtom::close) {
             if (lua_isnoneornil(L, 2)) {
@@ -157,24 +162,24 @@ TYPE_CONFIG (FileWriter) {
                 return return_values;
             }
         }
-        auto ref = Writer{self};
+        auto ref = writer_t{self};
         auto pushed = writer_namecall(L, ref, atom);
         if (not pushed) luaL_errorL(L, "invalid namecall '%s'.", name);
         return *pushed;
     },
     .call = [](auto L) {
-        auto& self = Type<FileWriter>::to(L, 1);
+        auto& self = Type<wow::io::filewriter_t>::to(L, 1);
         self << lua::tostring_tuple(L, {.start_index = 2, .separator = ", "});
         lua_pushvalue(L, 1);
         return 1;
     },
-    .index = Properties<FileWriter>::index,
-    .newindex = Properties<FileWriter>::newindex,
+    .index = Properties<filewriter_t>::index,
+    .newindex = Properties<filewriter_t>::newindex,
 };
-TYPE_CONFIG (FileReader) {
+TYPE_CONFIG (filereader_t) {
     .type = "filereader",
     .namecall = [](lua_State* L) -> int {
-        auto& self = Type<FileReader>::to(L, 1);
+        auto& self = Type<filereader_t>::to(L, 1);
         auto const [atom, name] = lua::namecall_atom<NamedAtom>(L);
         if (atom == NamedAtom::close) {
             if (lua_isnoneornil(L, 2)) {
@@ -192,16 +197,16 @@ TYPE_CONFIG (FileReader) {
                 return return_values;
             }
         }
-        auto ref = Reader{self};
+        auto ref = reader_t{self};
         auto pushed = reader_namecall(L, ref, atom);
         if (not pushed) luaL_errorL(L, "invalid namecall '%s'.", name);
         return *pushed;
     }
 };
-TYPE_CONFIG (Reader) {
+TYPE_CONFIG (reader_t) {
     .type = "reader",
     .namecall = [](lua_State* L) -> int {
-        auto& self = Type<Reader>::to(L, 1);
+        auto& self = Type<reader_t>::to(L, 1);
         auto const [atom, name] = lua::namecall_atom<NamedAtom>(L);
         auto pushed = reader_namecall(L, self, atom);
         if (not pushed) luaL_errorL(L, "invalid namecall '%s'.", name);

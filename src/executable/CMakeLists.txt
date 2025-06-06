@@ -2,15 +2,15 @@ add_executable(executable
     cli.cpp
     state.cpp
     require.cpp
-    filesystem_library.cpp
-    io_library.cpp
-    http_library.cpp
-    json_library.cpp
-    process_library.cpp
-    io_types.cpp
-    filesystem_types.cpp
-    http_types.cpp
-    process_types.cpp
+    fs/library.cpp
+    io/library.cpp
+    http/library.cpp
+    json/library.cpp
+    proc/library.cpp
+    io/types.cpp
+    fs/types.cpp
+    http/types.cpp
+    proc/types.cpp
     ${CMAKE_SOURCE_DIR}/extern/luau/CLI/src/ReplRequirer.cpp
     ${CMAKE_SOURCE_DIR}/extern/luau/CLI/src/RequirerUtils.cpp
     ${CMAKE_SOURCE_DIR}/extern/luau/CLI/src/Coverage.cpp

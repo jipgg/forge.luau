@@ -1,3 +1,15 @@
 CompileFlags:
   Add:
-  - "-std=c++23"
+    - "-std=c++23"
+    - "-Isrc/executable"
+    - "-Iextern/luau/VM/include"
+    - "-Iextern/luau/Compiler/include"
+    - "-Iextern/luau/CodeGen/include"
+    - "-Iextern/luau/Config/include"
+    - "-Iextern/luau/Common/include"
+    - "-Iextern/luau/Ast/include"
+    - "-Iextern/luau/CLI/include"
+    - "-Iextern/luau/Require/Runtime/include"
+
+    - "-Iextern/httplib"
+    - "-Iextern/nlohmannjson/include"
