@@ -11,4 +11,4 @@ add_subdirectory(extern/httplib)
 add_subdirectory(extern/nlohmannjson)
 
 # source code
-add_subdirectory(src/executable)
+add_subdirectory(src)

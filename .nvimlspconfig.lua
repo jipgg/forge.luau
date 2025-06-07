@@ -1,5 +1,5 @@
 return {
     luau_lsp = {
-        definitions = {"etc/wowdefinitions.luau"},
+        definitions = {"wow.d.luau"},
     }
 }
